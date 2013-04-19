@@ -1,0 +1,28 @@
+#!/bin/zsh
+# KungFu‼ config file.
+# run ‘kungfu --help’ for usage info.
+
+## NOTE: Default values are commented out. ##
+# EDITOR='vim -fpg'
+# XOPENER='/usr/bin/xdg-open'
+
+# EDITORS=( # Override EDITOR for corresponding SOURCES
+#   'keyword' 'command'
+# )
+
+SOURCES=(
+#   'keyword' 'files to open with EDITOR or EDITORS[keyword]'
+    'all'       '*'
+    'kungfu'    'kungfu'
+    'passwork'  'passwork'
+    'gits'      'gits'
+)
+
+# TARGETS=(
+#   'keyword' 'files to open with XOPENER'
+# )
+
+# if defined, kungfu will `exec kungfu_exec` rather than exit.
+# kungfu_exec() {
+# }
+

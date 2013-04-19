@@ -1,0 +1,403 @@
+#!/bin/zsh
+setopt RE_MATCH_PCRE
+typeset -a ARGS SWAPS
+typeset -A OPTS SOURCES DEFAULTS EDITORS TARGETS
+typeset EDIT=false DEBUG=false BLANK=false NOHELP=false UPDATE=false VERBOSE=0
+typeset WORKDIR KFUFILE OPENDIR XOPENER=$(whence xdg-open)
+SWAPS=('%s/.%s.swp' '%s/%s.swp' '%s/_%s.swp')
+fprint() { #{{{
+    typeset VCHECK HEAD='' TAIL='%f' COLOR='black' N=false
+    zparseopts -E -D -AOPTS b c: n
+    for o (${(k)OPTS}) {
+        case ${o} in
+            -b) HEAD+='%B'; TAIL+='%b';;
+            -c) COLOR=${OPTS[$o]};;
+            -n) N=true;;
+        esac
+    }
+    if [[ ${1} =~ '^\d$' ]] { VCHECK=${1}; shift; }
+    : ${VCHECK:=1}
+    ((${VERBOSE} >= ${VCHECK})) || return
+    if [[ -n ${COLOR} ]] {
+        HEAD+="%F{${COLOR}}"
+        TAIL+='%f'
+    }
+    ${N} || TAIL+="\n"
+    print -nP ${HEAD}${@}${TAIL}
+} #}}}
+spample() { #{{{
+    typeset TXT
+    # HEAD #{{{
+    TXT="#!/bin/zsh
+	# KungFu‼ config file.
+	# run ‘kungfu --help’ for usage info.
+	
+	## NOTE: Default values are commented out. ##
+	# EDITOR='${EDITOR}'
+	# XOPENER='${XOPENER}'
+	" #}}}
+    if [[ -n ${EDITORS[@]} ]] { #{{{
+        TXT+="\nEDITORS=( # Override EDITOR for corresponding SOURCES\n"
+        TXT+="# 'keyword' 'command'\n"
+        for key (${(k)EDITORS}) {
+            TXT+="  '$key' '${EDITORS[${key}]}'\n"
+        }
+        TXT+=")\n"
+    } else {
+        TXT+="
+		# EDITORS=( # Override EDITOR for corresponding SOURCES
+		#   'keyword' 'command'
+		# )\n"
+    }
+    #}}}
+    if [[ -n ${SOURCES[@]} ]] { #{{{
+        TXT+="\nSOURCES=(\n"
+        TXT+="# 'keyword' 'files to open with EDITOR or EDITORS[keyword]'\n"
+        for key (${(k)SOURCES}) {
+            TXT+="  '$key' '${SOURCES[${key}]}'\n"
+        }
+        TXT+=")\n"
+    } else {
+    TXT+="
+		# SOURCES=(
+		#   'keyword' 'files to open with EDITOR or EDITORS[keyword]'
+		# )\n"
+    }
+    #}}}
+    if [[ -n ${TARGETS[@]} ]] { #{{{
+        TXT+="\nTARGETS=(\n"
+        TXT+="# 'keyword' 'files to open with XOPENER'"
+        for key (${(k)TARGETS}) {
+            TXT+="  '$key' '${TARGETS[${key}]}'\n"
+        }
+        TXT+=")\n"
+    } else {
+    TXT+="
+		# TARGETS=(
+		#   'keyword' 'files to open with XOPENER'
+		# )\n"
+    }
+    #}}}
+    # kungfu_exec #{{{
+    TXT+="\n"
+    TXT+='# if defined, kungfu will `exec kungfu_exec` rather than exit.'
+    TXT+="\n"
+    if [[ -n $(typeset -fm kungfu_exec) ]] {
+        TXT+=$(typeset -fm kungfu_exec)
+    } else {
+        TXT+="# kungfu_exec() {\n# }\n"
+    }
+    #}}}
+    print ${TXT//	/}
+} #}}}
+edit_fu() { #{{{
+    if [[ ! -f ${KFUFILE} ]] {
+        spample > ${KFUFILE}
+        fprint -b '.kungfu created.'
+    }
+    typeset KFUBIN=$(ps --no-headers -p$$ -ocmd | cut -d' ' -f2)
+    ${DEBUG} || ${(z)EDITOR} ${KFUFILE} &>| /dev/null &!
+    ${DEBUG} && ${(z)EDITOR} ${KFUFILE} ${KFUBIN} &>| /dev/null &!
+    exit
+} #}}}
+create_cache() { #{{{
+        locate .kungfu | sed -e 's/.\.kungfu$//' > ~/.zsh/${HOST}/kungfu
+        fprint -nbcblu 'Cache updated. ('
+        fprint -b "~/.zsh/${HOST}/kungfu%F{blue})"
+    exit
+} #}}}
+update_config() { #{{{
+    if [[ -f ${KFUFILE} ]] {
+        typeset KFUTEMP="${KFUFILE}_$$"
+        source ${KFUFILE}
+        [[ -n ${OPENERS[@]} ]] && TARGETS=(${OPENERS[@]})
+        cp ${KFUFILE} ${KFUTEMP}
+        spample > ${KFUFILE}
+        fprint -b "Updated %F{blue}${KFUFILE}%F{b}."
+        if [[ -n $(diff -q ${KFUFILE} ${KFUTEMP}) ]] {
+            fprint -b "Old file saved as: ${KFUTEMP}."
+        } else {
+            rm ${KFUTEMP}
+        }
+    } else {
+        [[ -n ${OPENERS[@]} ]] && TARGETS=(${OPENERS[@]})
+        spample > ${KFUFILE}
+        fprint -b '.kungfu created.'
+    }
+    exit
+} #}}}
+manpage() { #{{{
+    typeset PANDOC; PANDOC=$(whence pandoc)
+    [[ -x ${PANDOC} ]] || {
+        print "Error: 'pandoc' not in path."
+        exit
+    }
+    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+	% KUNGFU(1) KungFu user manual
+	% Garrison Hoffman <garrison@codefix.net>
+	
+	# NAME
+	
+	kungfu --- KungFu user manual
+	
+	# SYNOPSIS
+	
+	kungfu [*OPTIONS*] [*KEYWORD*]
+	
+	# DESCRIPTION
+	
+	
+	KungFu was written to aid the author, as well as anyone else who finds this
+	sort of thing of use, to easily define shell aliases to set up project
+	environments.
+	
+	Project folder names may be aliased as executable scripts in a shell startup
+	script, e.g. *~/.zshenv* with:
+	
+	    for DIR (~/Code/*) {
+	        [[ -r "${DIR}/.kungfu" ]] && alias ${DIR:t}="cd ${DIR:a} && kungfu"
+	    }
+	
+	A numeric array index may be supplied in place of a keyword, such that
+	'kungfu 1' selects the first element of the SOURCES array.
+	
+	# OPTIONS
+	
+	-d, --debug
+	:   Print commands, rather than executing them.
+	-e, --edit
+	:   Edit the .kungfu file, then exit. If no file exists,
+	    one will be created with default values.
+	-h, --help
+	:   Show usage, then exit.
+	-o *DIR*, --opendir=*DIR*
+	:   See **CONFIG FILE VARIABLES**
+	-w, --workdir=*DIR*
+	:   Set the working directory; defaults to *${PWD}*.
+	-x *EXEC*, --xopener=*EXEC*
+	:   See **CONFIG FILE VARIABLES**.
+	-u, --update
+	:   Update *.kungfu* file; if an existing file is found, a
+	    backup will be created and sourced.
+	-v, -q
+	:   Increment, decrement verbosity with each use.
+	--verbosity=*N*
+	:   Set an explicit verbosity level.
+	
+	# KUNGFU CONFIG FILE
+	
+	Config files are sought as *\${WORKDIR}/.kungfu* and sourced as a zshell
+	script. The only strict requirement is a hash variable named **TARGETS** or
+	**SOURCES**. Both consist of an arbitrary left side keyword against which
+	command line arguments are matched and a right side (space separated) list
+	of file paths or shell glob patterns, which may be relative to *${WORKDIR}*.
+	**TARGETS** and **SOURCES** may coexist; they differ in the following ways:
+	
+	## TARGETS
+	* Values are passed individually to *${XOPENER}*.
+	
+	## SOURCES
+	* Values are passed as an argument list to *${EDITOR}*.
+	* Files with existing vim swap files are removed from argument list.
+	* Allows the special keyword '\*' which acts as a default when no keyword
+	  is given at the command line.
+	
+	# OVERRIDE VARIABLES
+	
+	EDITOR
+	:   Text editor used on **SOURCES**; defaults to *vim -p* if set
+	    in neither *.kungfu* nor as an environment variable.
+	
+	XOPENER
+	:   X-launcher, defaults to *xdg-open*. Use *xdg-mime* to query or set
+	    standard X application defaults.
+	
+	OPENDIR
+	:   Directory to open. Defaults to the same directory as the first
+	    **SOURCES** file; set to any non-directory to disable.
+	
+	EDITORS
+	:   If a keyword is identical to one in **SOURCES**, the value
+	    specified overrides that of **EDITOR**.
+	EOF
+} #}}}
+brief_usage() { #{{{
+    typeset HELP='%B%F{b}' LISTS='%F{blue}';
+    [[ -n ${SOURCES} ]] && LISTS+=${(kpj:%F{b}|%F{blue}:)SOURCES};
+    [[ -n ${SOURCES} && -n ${TARGETS} ]] && LISTS+='%F{b}|%F{blue}';
+    [[ -n ${TARGETS} ]] && LISTS+=${(kpj:%F{b}|%F{blue}:)TARGETS};
+    case ${1} in
+        'brief')
+        if [[ -z ${LISTS} ]] {
+            HELP+="Usage: %b%F{c}kungfu%B%F{b} [options] [%F{blue}keyword%F{b}]"
+        } elif [[ -n ${2} ]] {
+            HELP+="%F{b}“%F{blue}${2}%F{b}” doesn't match any of: ${LISTS}"
+        } else {
+            HELP+="Usage: %b%F{c}kungfu%B%F{b} [options] [${LISTS}%F{b}]"
+        };;
+        'kungfu')   HELP+="File ‘${KFUFILE:t}’ does not exist,"
+                    HELP+=" but can be created with --edit.";;
+        'sources')  HELP+="Neither SOURCES nor TARGETS defined.";;
+        'workdir')  HELP+="Invalid workdir: ${WORKDIR}.";;
+    esac
+    [[ -n ${HELP} ]] && {
+        fprint 0 ${HELP};
+        fprint 0 '  %B%F{b}See ‛%b%F{c}kungfu --help%B%F{b}’' \
+            '%B%F{b}for full documentation.';
+        exit;
+    }
+} #}}}
+usage() { #{{{
+    ${NOHELP} && return
+    if [[ -n ${1} ]] {
+        brief_usage $@
+    } else {
+        manpage
+    }
+    exit 1
+} #}}}
+swap_check() { #{{{
+    typeset file; file=${1}
+    if [[ ! -f ${file} ]] {
+        fprint 3 "  %F{c}Non-file: %F{blue}${file}%F{c}.%f"
+        return 1
+    }
+    for pat (${SWAPS[@]}) {
+        swp=$(printf ${pat} ${file:h} ${file:t})
+        if [[ -f ${(Q)swp:A} ]] {
+            fprint 1 "  %F{blue}${${swp:h}/${~HOME}/~}/%F{red}${swp:t}%f" \
+                " %F{blue}exists.%f"
+            swpFiles+=${swp}
+            return 0
+        } else {
+            fprint 2 "  %F{blue}${${swp:h}/${~HOME}/~}/%B${swp:t}%b" \
+                "%F{blue}not found.%f"
+        }
+    }
+    return 1
+} #}}}
+process_options() { #{{{
+    typeset CACHE=false
+    # Process les parametrices… #{{{
+    zparseopts -E -D -AOPTS -- d -debug v+=VB -verbose: q+=QT -quiet: \
+        h -help -no-help e -edit -cache \
+        o: -opendir: w: -workdir: x: -xopener: u -update
+    [[ $? = 0 ]] || print "Error ${status}!"
+    for o (${(k)OPTS}) {
+        case ${o} in
+            -d | --debug)   DEBUG=true;;
+            -e | --edit)    EDIT=true;;
+            -u | --update)  UPDATE=true;;
+                 --cache)   CACHE=true;;
+            -h | --help)    usage;;
+              --no-help)    NOHELP=true;;
+            -x | --xopener) XOPENER=${OPTS[$o]};;
+            -w | --workdir) WORKDIR=${OPTS[$o]:a};;
+            -o | --opendir) OPENDIR=${OPTS[$o]:a};;
+            -q)             let VERBOSE-=${#QT};;
+                 --quiet)   let VERBOSE-=${OPTS[$o]};;
+            -v)             let VERBOSE+=${#VB};;
+                 --verbose) let VERBOSE+=${OPTS[$o]};;
+        esac
+    } #}}}
+    # Post-Opt defaults… #{{{
+    : ${EDITOR:=vim -p}
+    : ${KFUFILE:='.kungfu'}
+    : ${WORKDIR:=${PWD:A}}
+    ARGS+=($@) #}}}
+    ${CACHE} && create_cache
+    # Cause a warning if WORKDIR get overwritten.
+    typeset -r WORKDIR=${WORKDIR}
+    # Edit & usage bailouts… #{{{
+    [[ -d ${WORKDIR} ]] || usage 'workdir'
+    cd ${WORKDIR} && fprint 3 "%B%F{black}cd ${WORKDIR/${~HOME}/~}%f%b"
+    $EDIT && edit_fu
+    ${UPDATE} && update_config
+    if [[ -r ${KFUFILE} ]] { source ${KFUFILE} } else { usage 'kungfu' }
+    [[ -z ${SOURCES} && -z ${TARGETS} ]] && usage 'sources'
+    [[ -z ${ARGS} ]] && usage brief
+    #}}}
+} #}}}
+xwin_id() { #{{{
+    xwininfo -root -tree | grep -Pom1 "0x\w+(?= \"\Q${1}\E[\b\s])"
+} #}}}
+xwin_name() { #{{{
+    [[ ${1} =~ '0x' ]] || exit -10
+    xwininfo -id ${1} | grep -Po "(?<=${1} \")[^\"]+"
+} #}}}
+open_check() { #{{{
+    typeset xID
+    if [[ -d ${1} ]] {
+        fprint -b "Checking open folders (${1:t})…"
+        xID=$(xwin_id ${1:t})
+    } else {
+        fprint -b "Checking open windows (${1})…"
+        xID=$(xwin_id ${1})
+    }
+    if [[ -n ${xID} ]] {
+        fprint 1 "  %F{y} Open window detected:" \
+        "%F{blue}“%F{magenta}$(xwin_name $xID)%F{blue}”" \
+        "⦗%F{magenta}${xID}%F{blue}⦘%f"
+    } else {
+        fprint 2 \
+            "  %F{green}${XOPENER}%f %F{cyan}${1/${~HOME}/~}%f" \
+            "%F{blue} &>| /dev/null &!"
+        ${DEBUG} && return
+        ${XOPENER} ${1} &>| /dev/null &!
+    }
+} #}}}
+edit_check() { #{{{
+    fprint -b 'Checking swap files…'
+    typeset -a swpFiles srcFiles srcList
+    typeset src swp SWAP=false
+    [[ -n ${EDITORS[${key}]} ]] && EDITOR=${EDITORS[${key}]}
+    srcList=(${(z)SOURCES[${key}]})
+    for src (${~srcList[@]}) {
+        : ${OPENDIR:=${src:h}}
+        swap_check ${src} || srcFiles+=${src}
+    }
+    if [[ -z ${srcFiles} ]] {
+        fprint "  %F{yellow}No files to edit.%f"
+    } else {
+        fprint -c magenta "  All clear!"
+        fprint 2 "  %F{green}${(z)EDITOR}%f %F{cyan}${srcFiles[@]}%f" \
+            "%F{blue} &>| /dev/null &!"
+        ${DEBUG} && return
+        ${(z)EDITOR} ${(Q)srcFiles[@]} &>| /dev/null &!
+    }
+} #}}}
+open_checks() { #{{{
+    typeset -a srcFiles srcList
+    typeset src
+    # [[ -n ${EDITORS[${key}]} ]] && XOPENER=${EDITORS[${key}]}
+    srcList=(${(z)TARGETS[${key}]})
+    for src (${~srcList[@]}) {
+        : ${OPENDIR:=${src:h}}
+        open_check ${src}
+    }
+    [[ -d ${OPENDIR} ]] && open_check ${OPENDIR}
+} #}}}
+kungfu() { #{{{
+    typeset key; typeset -a KEYS
+    KEYS=(${(k)SOURCES} ${(k)TARGETS}); key=${KEYS[(r)${1}*]}
+    if [[ -z ${1} ]] {
+        usage brief ${1}
+    } elif [[ -n ${TARGETS[${key}]} || -n ${SOURCES[${key}]} ]] {
+        edit_check
+        open_checks
+    } elif [[ -n ${SOURCES[(e)*]} ]] {
+        key='*'
+        edit_check
+        open_checks
+    } elif [[ ${1} =~ '[1-9][0-9]*' && ${1} -le ${#SOURCES} ]] {
+        key=${KEYS[${1}]}
+        edit_check
+        open_checks
+    } else {
+        usage brief ${1}
+    }
+} #}}}
+process_options $@
+[[ ${ARGS} == "help" ]] && usage
+kungfu ${ARGS}
+[[ -n $(functions -m kungfu_exec) ]] && kungfu_exec

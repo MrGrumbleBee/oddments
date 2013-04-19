@@ -1,0 +1,236 @@
+#!/usr/bin/perl
+use strict;
+use Pod::Usage;
+use Getopt::Long;  #{{{
+Getopt::Long::config('bundling');
+my %opts = (
+    'verbose' => 0,
+);
+GetOptions(
+	"algorithm|a=s" => \$opts{'algorithm'},
+           "help|h" => \$opts{'help'},
+	     "leet|L"   => \$opts{'leet'},
+     "wordlist|w=s" => \$opts{'wordlist'},
+	  "verbose|v:+" => \$opts{'verbose'},
+	     "lame|l:+" => \$opts{'lame'},
+);
+#}}}
+pod2usage(-exitstatus => 0, -verbose => 2) if $opts{'help'};
+die "USAGE: passwork [-a (accrete|dispress)] [-l] [-s] [-w filename] int [int]"
+    . "\nSee `passwork --help` for complete documentation.\n" 
+    unless @ARGV;
+
+my @algorithms = ('dispress', 'accrete');
+my $length = shift || 8;
+my $loop   = shift || 1;
+my $algo   = $opts{'algorithm'} || 'mix';
+
+my @words;
+@words = get_words($opts{'wordlist'}) unless $opts{'algorithm'} eq 'accrete';
+# Build passwords {{{
+for (my $i = 0; $i < $loop; $i++) {
+    if ($opts{'algorithm'} !~ /^(dispress|accrete)$/) {
+        $algo = $algorithms[rand(@algorithms)];
+    }
+    my $password = random_password($algo, $length, \@words, \%opts);
+    printf('%02d ', length($password)) if $opts{'verbose'} > 0;
+    print $password;
+    printf(' %s', $algo) if $opts{'verbose'} > 1;
+    print "\n";
+}	
+# }}}
+
+sub random_password { # {{{
+    my ($algorithm, $length, $words, $opts) = @_; 
+
+    my $alen = int($length / 2) - 1;
+    my $blen = int($length - $alen);
+    $blen-- unless $opts->{'lame'};
+    my ($aword, $bword);
+
+    if ($algorithm eq 'accrete') {
+        $a = build_word($alen);
+        $b = build_word($blen);
+    }
+    else {
+        $a = get_word($alen, $words, 1);
+        $b = get_word($blen, $words);
+    }
+
+    my $password = $opts->{'lame'}
+                 ? $a . $b
+                 : addfix($a, $b, $length);
+	$password =~ tr/AaeiolSsx/@43!015$X/ if $opts->{'leet'};
+    $password =~ s/(\w+)/\L$1/ if $opts->{'lame'} && $opts->{'lame'} > 1;
+    return $password;
+}
+# }}}
+sub addfix { # {{{
+    my ($a, $b, $length) = @_;
+    my $ablen = length($a . $b);
+    return $a . $b if ($ablen >= $length);
+
+    my (@prefix)  = qw(@ $ % ^ & * _ - = + ~ #);
+    my (@infix)   = qw(. : , % ^ | & * _ - = + ~);
+    my (@postfix) = qw(! ? $ % ^ * + ~ #);
+    my (@openfix) = qw/< [ { (/;
+    my (@closefix) = qw/> ] } )/;
+
+    if ($ablen < ($length - 1)) {
+        my $i = rand(@openfix);
+        my $x = ($ablen < $length - 2)
+              ? $infix[rand(@infix)]
+              : '';
+        return $openfix[$i] . $a . $x . $b . $closefix[$i];
+    }
+
+    my $fix = int(rand(9));
+    my $password = ($fix == 0) ? $prefix[rand(@prefix)] . $a . $b
+                 : ($fix == 1) ? $a . $b . $postfix[rand(@postfix)]
+                 :               $a . $infix[rand(@infix)] . $b;
+    return $password;
+}
+# }}}
+sub get_words { # {{{
+    my $list = @_;
+    my $dictdir = '/usr/share/dict';
+    my $wordlist = -r $list                     ? $list
+                 : -r "$dictdir/words"          ? "$dictdir/words"
+                 : -r "$dictdir/cracklib-small" ? "$dictdir/cracklib-small"
+                 : undef;
+    open(DICT, $wordlist) or die "Can't open $wordlist $!";
+        my @wlist = <DICT>;
+    close(DICT);
+    return @wlist;
+}
+# }}}
+sub get_word { # {{{
+    my ($len, $wlist, $start) = @_;
+    my $word = '';
+    until (length($word) >= $len) {
+        $word = @$wlist[rand(@$wlist)];
+        $word =~ s/(?:\r?\n)+$//;
+        $word =~ s/s?'//;
+    }
+    $word = $start ? substr($word, 1, $len)
+                   : substr($word, (length($word) - $len), $len);
+    $word =~ s/^([a-z])/\u$1/;
+    return $word;
+}
+# }}}
+sub build_word { # {{{
+    my $len = shift;
+    my $word = '';
+        my $close;
+        my (@s_vowel)     = qw(a e i o u y);
+        my (@s_consonant) = qw(b c d f g h j k l m n p q r s t v w x z);
+        my (@vowel)     = qw(a a a e e e e i i i o o o u u y
+                             ae ai au ay ea ee eu ia ie io oa oi oo oy);
+        my (@consonant) = qw(b c d f g h j k l m n p qu r s t v w x z
+                             th st sh ph ng nd);
+        my ($vowelnext) = int(rand(2));  # Initialise to 0 or 1
+
+        until (length($word) >= $len) {
+            $close = (length($word) == ($len - 1));
+            if ($vowelnext) {
+                    $word .= $close
+                           ? $s_vowel[rand(@s_vowel)]
+                           : $vowel[rand(@vowel)];
+            }
+            else {
+                $word .= $close
+                       ? $s_consonant[rand(@s_consonant)]
+                       : $consonant[rand(@consonant)];
+            }
+            $vowelnext = !$vowelnext;    # Swap letter type for the next one
+        }
+    $word =~ s/^([a-z])/\u$1/;
+    return $word;
+}
+# }}}
+# POD {{{
+
+=head1 NAME
+
+passwork - A password generator
+
+=head1 SYNOPSIS
+
+B<passwork> [B<options>]
+I<int>
+[I<int>]
+
+=head1 DESCRIPTION
+
+I<passwork> generates strong, (hopefully) pronounceable passwords which
+include mixed case letters and up to three symbol characters.
+The first parameter is the target length of the passwords and the optional
+second parameter sets the number of passwords to generate.
+
+Absolute length precision has been sacrificed in favor of pronounceability,
+however the program tries to include one symbol character and allow up
+to three as prefix, infix, postfix, or brackets to compensate for length
+discrepancies. 
+
+=head1 OPTIONS
+
+=over 5
+
+=item	B<-a>, B<--algorithm> I<dispress>|I<accrete>
+
+Specify the password generation algorithm; if not specified, a random algorithm
+will be selected for each password generated.
+
+I<dispress> -
+a letter-based Dissociated Press algorithm applied to a dictionary file.
+
+I<accrete> -
+randomly selected consonants, vowels, and digraphs.
+
+=item	B<-w>, B<--wordlist> I<filename>  
+
+Use the given wordlist instead of the system dictionary file.
+
+=item	B<-l>, B<--lame>
+
+Set lameness: use once to exclude numeric and special characters
+use twice to exclude all but lower case letters.
+
+=item	B<-L>, B<--leet>
+
+M@k3 th3 p@$$w0rds n3@r1y i11g3b13.
+
+=back
+
+=head1 AUTHOR
+
+    Garrison Hoffman <garrison@codefix.net>
+    Codefix Consulting Inc.
+
+=head1 LICENSE
+
+Copyright (c) 2011 Garrison Hoffman, Codefix Consulting, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+=cut
+
+# }}}
+
+1;
