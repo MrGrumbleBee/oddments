@@ -1,0 +1,11 @@
+# Service list, one per line
+amavis
+apache2
+bind9
+clamav-daemon
+clamav-freshclam
+dovecot
+mysql
+postfix
+postgrey
+ssh
