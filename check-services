@@ -1,0 +1,12 @@
+#!/usr/bin/zsh
+typeset -a Services
+typeset CONF='~/check-services.cf'
+[[ -r ${CONF} ]] && Services=$(grep -v '\#' ${CONF})
+for S (${(f)Services}) { #{{{
+    TEST=$(sudo service ${S} status)
+    if [[ "${TEST}" =~ 'running' ]] {
+        print "Service ${S} OK."
+    } else {
+    print "Service ${S} not OK. (${TEST})"
+    }
+} #}}}
