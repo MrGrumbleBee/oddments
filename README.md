@@ -3,6 +3,11 @@ Oddments
 
 Assorted useful scripts.
 
+check-services
+--------------
+
+In development. _caveat emptor_
+
 gits
 ----
 
