@@ -1,7 +1,11 @@
 #!/usr/bin/zsh
 typeset -a Services
 typeset CONF='~/check-services.cf'
-[[ -r ${CONF} ]] && Services=$(grep -v '\#' ${CONF})
+if [[ -r ${~CONF} ]] { #{{{
+    Services=$(grep -v '\#' ${~CONF})
+} else {
+    print "Can't read ${CONF}"
+} #}}}
 for S (${(f)Services}) { #{{{
     TEST=$(sudo service ${S} status)
     if [[ "${TEST}" =~ 'running' ]] {
