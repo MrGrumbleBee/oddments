@@ -8,7 +8,7 @@ if [[ -r ${~CONF} ]] { #{{{
 } #}}}
 for S (${(f)Services}) { #{{{
     TEST=$(sudo service ${S} status)
-    if [[ "${TEST}" =~ 'running' ]] {
+    if [[ "${TEST}" =~ 'is running|start/running' ]] {
         print "Service ${S} OK."
     } else {
     print "Service ${S} not OK. (${TEST})"
