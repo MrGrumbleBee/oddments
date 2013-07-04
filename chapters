@@ -1,12 +1,15 @@
 #!/bin/zsh
-typeset chapter
-for F ($@) {
-    if [[ $F =~ 'Chapter [A-Z][a-z]+' ]] {
-        chapter=${F:t:r}
-        chapter=${chapter/[0-9]* Chapter /}
-        print "== ${chapter} =="
-    } else {
-        print " mv ${F} ${F:t:r}${chapter}.${F:e}"
-        mv ${F} ${F:t:r}${chapter}.${F:e}
+name-chapters() { #{{{
+    typeset chapter
+    for F ($@) {
+        if [[ $F =~ 'Chapter [A-Z][a-z]+' ]] {
+            chapter=${F:t:r}
+            chapter=${chapter/[0-9]* Chapter /}
+            print "== ${chapter} =="
+        } else {
+            print " mv ${F} ${F:t:r}${chapter}.${F:e}"
+            # mv ${F} ${F:t:r}${chapter}.${F:e}
+        }
     }
-}
+} #}}}
+name-chapters $@
