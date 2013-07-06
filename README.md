@@ -3,6 +3,11 @@ Oddments
 
 Assorted useful scripts.
 
+chapters
+--------
+
+A tool to assist in renaming audiobook files downloaded from downpour.com.
+
 check-services
 --------------
 

@@ -1,15 +1,135 @@
 #!/bin/zsh
-name-chapters() { #{{{
-    typeset chapter
-    for F ($@) {
-        if [[ $F =~ 'Chapter [A-Z][a-z]+' ]] {
-            chapter=${F:t:r}
-            chapter=${chapter/[0-9]* Chapter /}
-            print "== ${chapter} =="
+typeset DEBUG=false VERBOSE=0 CHAPTER='Chapter' UNPACK
+usage() { #{{{
+    typeset PANDOC; PANDOC=$(whence pandoc)
+    [[ -x ${PANDOC} ]] || {
+        print "Error: 'pandoc' not in path."
+        exit
+    }
+    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+	% CHAPTERS(1) chapters user manual
+	% Garrison Hoffman <garrison@codefix.net>
+	
+	# NAME
+	
+	chapters --- chapters user manual
+	
+	# SYNOPSIS
+	
+	chapters -u *DIR* *ZIP-FILES*
+	
+	chapters [*OPTIONS*] *DIR*
+	
+	# DESCRIPTION
+	
+	Chapters helps rename audiobook files to a standard format preferred by
+	the author. Unpack mode (**\--unpack**) will unzip and rename
+	downpour.com files, which must then be renamed where chapters begin, e.g.
+	
+	    01 Chapter One.mp3
+	    02 .mp3
+	    03 Chapter Two.mp3
+	    04 .mp3
+	
+	Running chapters at this point, giving the file's directory as an argument
+	will fill in the names of missing files. Run with **\--debug** to preview 
+	without actually renaming any files.
+	
+	# OPTIONS
+	
+	-u *DIR*, \--unpack=*DIR*
+	:   Unpack specified archives to *DIR* and rename.
+	    (e.g. **01\ .mp3**, **02\ .mp3**...)
+	-d, \--debug
+	:   Print commands, rather than executing them.
+	-h, \--help
+	:   Show usage, then exit.
+	-v, -q
+	:   Increment, decrement verbosity with each use.
+	\--verbosity=*N*
+	:   Set an explicit verbosity level.
+	EOF
+} #}}}
+fprint() { #{{{
+    typeset VCHECK HEAD='' TAIL='%f' COLOR='blue' N=false
+    zparseopts -E -D -AOPTS b c: n
+    for o (${(k)OPTS}) {
+        case ${o} in
+            -b) HEAD+='%B'; TAIL+='%b';;
+            -c) COLOR=${OPTS[$o]};;
+            -n) N=true;;
+        esac
+    }
+    if [[ ${1} =~ '^\d$' ]] { VCHECK=${1}; shift; }
+    : ${VCHECK:=1}
+    ((${VERBOSE} >= ${VCHECK})) || return
+    if [[ -n ${COLOR} ]] {
+        HEAD+="%F{${COLOR}}"
+        TAIL+='%f'
+    }
+    ${N} || TAIL+="\n"
+    print -nP ${HEAD}${@}${TAIL}
+} #}}}
+process_options() { #{{{
+    PARAMS=$(getopt -o c:dhqu:v \
+        --long chapter:,debug,help,quiet::,unpack:,verbose:: \
+        -n $0 -- "$@")
+    # Bail unless getopt returned 0
+    [[ $? = 0 ]] || die Terminating...
+
+    eval set -- ${PARAMS}
+    while true; do
+        case ${1} in
+            -c | --chapter) CHAPTER=$2;   shift 2;;
+            -u | --unpack)  UNPACK=$2;    shift 2;;
+            -d | --debug)   DEBUG=true;   shift;;
+            -h | --help)    usage;        shift;;
+
+            -q)             VERBOSE=$(( ${VERBOSE} - 1 )); shift;;
+            -v)             VERBOSE=$(( ${VERBOSE} + 1 )); shift;;
+            --verbose)      case ${2} in
+                            "") VERBOSE=$(( ${VERBOSE} + 1 ));    shift 2;;
+                            *) VERBOSE=$(( ${VERBOSE} + ${2} )); shift 2;;
+                            esac;;
+
+            --) shift; break;;
+             *) usage;;
+        esac
+    done
+    ARGS+=($@)
+} #}}}
+rename_chapters() { #{{{
+    cd ${1}
+    typeset chap dest
+    for src (*.mp3) {
+        if [[ ${src} =~ "[0-9]+ .*[A-Za-z-]+\.mp3" ]] {
+            chap=${src:r}
+            chap=${chap#[0-9]* }
+            fprint ${src/${chap}/%B${chap}%b%F{blue}}
+        } elif [[ ${src} =~ "[0-9]+ \.mp3" ]] {
+            dest="${src:r}${chap}.${src:e}"
+            [[ ${src} == ${dest} ]] && continue
+            fprint " mv %F{c}${src} %F{g}${dest}"
+            ${DEBUG} || mv ${src} ${dest}
         } else {
-            print " mv ${F} ${F:t:r}${chapter}.${F:e}"
-            # mv ${F} ${F:t:r}${chapter}.${F:e}
+            print "${src}?"
         }
     }
 } #}}}
-name-chapters $@
+unpack_downpour() { #{{{
+    for File ($@) {
+        if [[ ${File:e} =~ 'zip' ]] {
+            ${DEBUG} && fprint "unzip -od %F{g}${UNPACK} %F{y}${File}"
+            ${DEBUG} || unzip -od ${UNPACK} ${File}
+        } else {
+            fprint 0 "%F{red}Unsupported archive type: %F{y}${File:e}"
+        }
+    }
+    cd ${UNPACK}
+    typeset opt
+    ${DEBUG} && fprint "rename 's/.*File (\d+) of \d+\]/\$1 /' *"
+    ${DEBUG} || rename 's/.*File (\d+) of \d+\]/$1 /' *
+} #}}}
+process_options $@
+[[ -n ${UNPACK} ]] && unpack_downpour ${ARGS[@]}
+[[ -d ${ARGS[1]} ]] && rename_chapters ${ARGS[1]}
