@@ -101,18 +101,18 @@ process_options() { #{{{
 rename_chapters() { #{{{
     cd ${1}
     typeset chap dest
-    for src (*.mp3) {
-        if [[ ${src} =~ "[0-9]+ .*[A-Za-z-]+\.mp3" ]] {
+    for src (*.*) {
+        if [[ ${src} =~ "[0-9]+ .*[^ ]+\.(?:mp3|ogg)" ]] {
             chap=${src:r}
             chap=${chap#[0-9]* }
             fprint ${src/${chap}/%B${chap}%b%F{blue}}
-        } elif [[ ${src} =~ "[0-9]+ \.mp3" ]] {
+        } elif [[ ${src} =~ "[0-9]+ \.(?:mp3|ogg)" ]] {
             dest="${src:r}${chap}.${src:e}"
             [[ ${src} == ${dest} ]] && continue
             fprint " mv %F{c}${src} %F{g}${dest}"
             ${DEBUG} || mv ${src} ${dest}
         } else {
-            print "${src}?"
+            fprint "%F{c}Ignoring: %F{m}${src}"
         }
     }
 } #}}}
