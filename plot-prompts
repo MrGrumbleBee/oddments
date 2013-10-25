@@ -1,0 +1,18 @@
+#!/bin/zsh
+randline () { #{{{
+    sort -R ${1} | head -1
+} #}}}
+do_prompts () { #{{{
+    typeset sub obj mood
+    for x ({1..${1}}) {
+        sub=$(randline ${datdir}/subjects)
+        obj=$(randline ${datdir}/objects)
+        mood=$(randline ${datdir}/moods)
+        print -Pn "%F{blue}${sub:s/(/%b%F{blue\}(}%b%F{blu}, "
+        print -Pn "%F{blue}${obj}%b%F{blu}, "
+        print -P "and %F{blue}${mood}%b${blu}."
+    }
+} #}}}
+typeset num=1 datdir="${0:h}/plot-prompts.dat"
+[[ "$1" == [0-9]* ]] && num=$1
+do_prompts ${num}
