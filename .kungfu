@@ -16,6 +16,7 @@ SOURCES=(
     'kungfu'    'kungfu'
     'passwork'  'passwork'
     'gits'      'gits'
+    'plot'      'plot-prompts.dat/* plot-prompts'
 )
 
 # TARGETS=(

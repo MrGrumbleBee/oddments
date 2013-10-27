@@ -1,16 +1,25 @@
 #!/bin/zsh
-randline () { #{{{
-    sort -R ${1} | head -1
+do_part () { #{{{
+    typeset TxtPart HiColor=${2:='%B%F{m}'} BaseColor='%B%F{black}'
+    setopt RE_MATCH_PCRE
+    TxtPart=$(sort -R ${1} | head -1)
+    if [[ ${TxtPart} =~ '^([Tt]he|[Aa]n*) ' ]] {
+        TxtPart=${TxtPart/${~match} /${BaseColor}${match} ${HiColor}}
+    }
+    if [[ ${TxtPart} =~ '\(' ]] {
+        TxtPart=${TxtPart:s/(/${BaseColor}(}
+    }
+    print "${HiColor}${TxtPart}${BaseColor}"
 } #}}}
 do_prompts () { #{{{
-    typeset sub obj mood
+    typeset Sub Obj Mood
     for x ({1..${1}}) {
-        sub=$(randline ${datdir}/subjects)
-        obj=$(randline ${datdir}/objects)
-        mood=$(randline ${datdir}/moods)
-        print -Pn "%F{blue}${sub:s/(/%b%F{blue\}(}%b%F{blu}, "
-        print -Pn "%F{blue}${obj}%b%F{blu}, "
-        print -P "and %F{blue}${mood}%b${blu}."
+        Sub=$(do_part ${datdir}/subjects)
+        Obj=$(do_part ${datdir}/objects)
+        Mood=$(do_part ${datdir}/moods)
+        print -Pn "${Sub}, "
+        print -Pn "${Obj}, "
+        print -P "and ${Mood}."
     }
 } #}}}
 typeset num=1 datdir="${0:h}/plot-prompts.dat"
