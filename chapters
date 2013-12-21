@@ -119,16 +119,16 @@ rename_chapters() { #{{{
 unpack_downpour() { #{{{
     for File ($@) {
         if [[ ${File:e} =~ 'zip' ]] {
-            ${DEBUG} && fprint "unzip -od %F{g}${UNPACK} %F{y}${File}"
-            ${DEBUG} || unzip -od ${UNPACK} ${File}
+            ${DEBUG} && fprint "unzip -jod %F{g}${UNPACK} %F{y}${File}"
+            ${DEBUG} || unzip -jod ${UNPACK} ${File}
         } else {
             fprint 0 "%F{red}Unsupported archive type: %F{y}${File:e}"
         }
     }
     cd ${UNPACK}
     typeset opt
-    ${DEBUG} && fprint "rename 's/.*File (\d+) of \d+\]/\$1 /' *"
-    ${DEBUG} || rename 's/.*File (\d+) of \d+\]/$1 /' *
+    ${DEBUG} && fprint "rename 's/.*\b(\d+).*\./\$1 ./' *"
+    ${DEBUG} || rename 's/.*\b(\d+).*\./$1 ./' *
 } #}}}
 process_options $@
 [[ -n ${UNPACK} ]] && unpack_downpour ${ARGS[@]}
