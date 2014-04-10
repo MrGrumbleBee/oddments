@@ -12,14 +12,16 @@ do_part () { #{{{
     print "${HiColor}${TxtPart}${BaseColor}"
 } #}}}
 do_prompts () { #{{{
-    typeset Sub Obj Thm
+    typeset Protagonist Antagonist Object Theme
     for x ({1..${1}}) {
-        Sub=$(do_part ${datdir}/subjects)
-        Obj=$(do_part ${datdir}/objects)
-        Thm=$(do_part ${datdir}/themes)
-        print -Pn "${Sub}, "
-        print -Pn "${Obj}, "
-        print -P "and ${Thm}."
+        Protagonist=$(do_part ${datdir}/subjects)
+        Antagonist=$(do_part ${datdir}/subjects)
+        Object=$(do_part ${datdir}/objects)
+        Theme=$(do_part ${datdir}/themes)
+        print -Pn "${Protagonist}, "
+        print -Pn "${Antagonist}, "
+        print -Pn "${Object}, "
+        print -P "and ${Theme}."
     }
 } #}}}
 typeset num=1 datdir="${0:h}/plot-prompts.dat"
