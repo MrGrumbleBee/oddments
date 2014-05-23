@@ -308,9 +308,14 @@ process_options() { #{{{
     ${CACHE} && create_cache
     # Cause a warning if WORKDIR get overwritten.
     typeset -r WORKDIR=${WORKDIR}
-    # Edit & usage bailouts… #{{{
     [[ -d ${WORKDIR} ]] || usage 'workdir'
     cd ${WORKDIR} && fprint 3 "%B%F{black}cd ${WORKDIR/${~HOME}/~}%f%b"
+    # Set terminal title #{{{
+    case ${TERM} in
+        xterm*) print -Pn "\e]0;%1~\a" ;;
+    esac
+    #}}}
+    # Edit & usage bailouts… #{{{
     $EDIT && edit_fu
     ${UPDATE} && update_config
     if [[ -r ${KFUFILE} ]] { source ${KFUFILE} } else { usage 'kungfu' }
