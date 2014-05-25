@@ -142,10 +142,13 @@ manpage() { #{{{
 	
 	# SYNOPSIS
 	
-	kungfu [*OPTIONS*] [*KEYWORD*]
+	kungfu [*OPTIONS*]  [*KEYWORD*]
+	
+	kungfu [*OPTIONS*]  <*INT*>
+	
+	kungfu [*OPTIONS*]  <*FILES*>
 	
 	# DESCRIPTION
-	
 	
 	KungFu was written to aid the author, as well as anyone else who finds this
 	sort of thing of use, to easily define shell aliases to set up project
@@ -158,25 +161,29 @@ manpage() { #{{{
 	        [[ -r "${DIR}/.kungfu" ]] && alias ${DIR:t}="cd ${DIR:a} && kungfu"
 	    }
 	
+	
 	A numeric array index may be supplied in place of a keyword, such that
-	'kungfu 1' selects the first element of the SOURCES array.
+	'kungfu 0' selects the first element of the SOURCES array.
+	
+	One or more files may also be given in place of a keyword, in which case
+	a dynamic element of the SOURCES array is created and used.
 	
 	# OPTIONS
 	
-	-d, --debug
+	-d, \--debug
 	:   Print commands, rather than executing them.
-	-e, --edit
+	-e, \--edit
 	:   Edit the .kungfu file, then exit. If no file exists,
 	    one will be created with default values.
-	-h, --help
+	-h, \--help
 	:   Show usage, then exit.
-	-o *DIR*, --opendir=*DIR*
+	-o *DIR*, \--opendir=*DIR*
 	:   See **CONFIG FILE VARIABLES**
-	-w, --workdir=*DIR*
+	-w, \--workdir=*DIR*
 	:   Set the working directory; defaults to *${PWD}*.
-	-x *EXEC*, --xopener=*EXEC*
+	-x *EXEC*, \--xopener=*EXEC*
 	:   See **CONFIG FILE VARIABLES**.
-	-u, --update
+	-u, \--update
 	:   Update *.kungfu* file; if an existing file is found, a
 	    backup will be created and sourced.
 	-v, -q
@@ -319,6 +326,17 @@ process_options() { #{{{
     $EDIT && edit_fu
     ${UPDATE} && update_config
     if [[ -r ${KFUFILE} ]] { source ${KFUFILE} } else { usage 'kungfu' }
+    # Create SOURCE[_CLI] for files passed on command line #{{{
+    typeset -a cmdFiles
+    for arg (${ARGS[@]}) {
+        if [[ -f ${arg} ]] {
+            cmdFiles+=${arg:q}
+        }
+        if [[ -n ${cmdFiles} ]] {
+            SOURCES[_CLI]=${cmdFiles}
+            [[ -f ${ARGS[1]} ]] && ARGS[1]='_CLI'
+        }
+    } #}}}
     [[ -z ${SOURCES} && -z ${TARGETS} ]] && usage 'sources'
     [[ -z ${ARGS} ]] && usage brief
     #}}}
