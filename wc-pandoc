@@ -1,0 +1,5 @@
+#!/bin/zsh
+for f ($@) {
+    print -n "${f}\t"
+    grep -Ph '^[^#%]' ${f} | wc
+}
