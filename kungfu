@@ -163,7 +163,7 @@ manpage() { #{{{
 	
 	
 	A numeric array index may be supplied in place of a keyword, such that
-	'kungfu 0' selects the first element of the SOURCES array.
+	'kungfu 1' selects the first element of the SOURCES array.
 	
 	One or more files may also be given in place of a keyword, in which case
 	a dynamic element of the SOURCES array is created and used.
