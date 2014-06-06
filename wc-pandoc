@@ -1,0 +1,9 @@
+#!/bin/zsh
+typeset count=0 total=0 pad=0
+pad=$(cat $@ | wc -w)
+for f ($@) {
+    count=$(grep -Ph '^[^#%]' ${f} | wc -w)
+    (( total+=${count} ))
+    print "${(l:${#pad}:)count} ${f}"
+}
+print "${(l:${#pad}:)total} total"

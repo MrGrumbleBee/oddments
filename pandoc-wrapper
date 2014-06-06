@@ -1,0 +1,190 @@
+#!/bin/zsh
+typeset DEBUG=false PRESET=true FONTS=false OUTPUT PostOP VERBOSE=0
+typeset CONF=pandoc.conf MANPAGE="${0}.pandoc"
+typeset -a CMD FontFiles SOURCES PANDOC_ARGS
+# Fonts for ePub embedding #{{{
+FontFiles=(
+   '/usr/share/fonts/opentype/linux-libertine/LinLibertine_R.otf'
+   '/usr/share/fonts/opentype/linux-libertine/LinLibertine_RB.otf'
+   '/usr/share/fonts/opentype/linux-libertine/LinLibertine_RI.otf'
+   '/usr/share/fonts/opentype/linux-libertine/LinLibertine_RBI.otf'
+   '/usr/share/fonts/opentype/linux-libertine/LinBiolinum_R.otf'
+   '/usr/share/fonts/opentype/linux-libertine/LinBiolinum_RB.otf'
+   '/usr/share/fonts/opentype/linux-libertine/LinBiolinum_RI.otf'
+   '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'
+   '/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf'
+   '/usr/share/fonts/truetype/liberation/LiberationMono-Italic.ttf'
+   '/usr/share/fonts/truetype/liberation/LiberationMono-BoldItalic.ttf'
+) #}}}
+manpage() { #{{{
+    typeset PANDOC; PANDOC=$(whence pandoc)
+    [[ -x ${PANDOC} ]] || {
+        print "Error: 'pandoc' not in path."
+        exit
+    }
+    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+	% PANDOC-WRAPPER(1) pandoc-wrapper user manual
+	% Garrison Hoffman <garrison@codefix.net>
+	% Fri 07 Sep 2012
+	
+	# NAME
+	
+	pandoc-wrapper --- wrapper script for pandoc
+	
+	# SYNOPSIS
+	
+	pandoc-wrapper [*options*] [*input-file*]... \-- [*pandoc options*]
+	
+	# DESCRIPTION
+	
+	A wrapper script for pandoc. If a `pandoc.conf` is present, this file
+	will be sourced first.
+	
+	A double hyphen `--` may be used to terminate option processing, anything
+	following will be passed on to pandoc.
+	
+	# MAIN OPTIONS
+	
+	-o *OUTPUT*, --output *OUTPUT*
+	:   Also see **FORMAT NOTATIONS** (below).
+	
+	-d, --debug
+	:   Debug mode.
+	
+	-f, --fonts
+	:   Embed fonts when producing ePub output, otherwise ignored.
+	    Unfortunately, many epub readers ignore embedded fonts.
+	
+	-n, --no-preset
+	:   Do not automatically enable `--parse-raw --smart --normalize`
+	
+	-q, --quiet *INT*
+	:   The short form decrements verbosity by one and may be used
+	    repeatedly, the long form decrements verbosity by *INT*.
+	
+	-v, --verbose *INT*
+	:   The short form increments verbosity by one and may be used
+	    repeatedly, the long form increments verbosity by *INT*.
+	
+	# CONFIG VARIABLES
+	
+	OUTPUT
+	:   Provides a file name for --output.
+	SOURCES
+	:   Provides a shell pattern for input files.
+	PANDOC_ARGS
+	:   Pass additional arguments to pandoc.
+	
+	# CONFIG FILE Example
+	
+	    # pandoc.conf
+	    OUTPUT='Sample Book.epub'
+	    SOURCES=(src/*.pandoc src/*/*.pandoc)
+	    PANDOC_ARGS=(
+	        --template=pandoc.template
+	    )
+	
+	# FORMAT NOTATIONS
+	
+	epub
+	:   Checks current dir for `cover.png`, `cover.jpg`, `metadata.xml`.
+	    Also see the `--fonts` option.
+	html
+	:   Alias for `html5`.
+	html5
+	:   Checks for and invokes pandoc with
+	    `--css=~/.pandoc/epub.css --include-in-header=head.html`
+	mdown
+	:   Alias for `markdown`.
+	mobi
+	:   Create `epub`, then convert to `mobi`
+	pdf
+	:   Invokes pandoc with `--latex-engine=xelatex`.
+	EOF
+    exit
+} #}}}
+process_options() { #{{{
+    zparseopts -E -D -AOPTS -- d -debug v+=VB -verbose: q+=QT -quiet: h -help \
+        o: -output: f -fonts n -no-preset
+    [[ $? = 0 ]] || print "Error ${status}!"
+    for o (${(k)OPTS}) {
+        case ${o} in
+            -d | --debug)       DEBUG=true;;
+            -h | --help)        manpage;;
+            -f | --fonts)       FONTS=true;;
+            -o | --output)      OUTPUT=${OPTS[$o]};;
+            -n | --no-preset)   PRESET=false;;
+            -q)                 let VERBOSE-=${#QT};;
+                 --quiet)       let VERBOSE-=${OPTS[$o]};;
+            -v)                 let VERBOSE+=${#VB};;
+                 --verbose)     let VERBOSE+=${OPTS[$o]};;
+        esac
+    }
+    for x ($@) {
+        [[ ${x} != '--' ]] && ARGS+=(${x})
+    }
+    [[ ${ARGS[1]} == '--' ]] && shift ${ARGS};
+    if [[ ${OUTPUT:e} == 'mobi' ]] {
+        PostOP=${OUTPUT}
+        OUTPUT="${OUTPUT:r}.epub"
+    }
+} #}}}
+run_cmd() { #{{{
+    [[ -z ${CMD} ]] && exit
+    (( VERBOSE >= 1 )) && print $CMD
+    ${DEBUG} || $CMD
+} #}}}
+post_ops() { #{{{
+    CMD=''
+    case ${PostOP:e} in
+        'mobi') [[ -f ${PostOP} ]] && rm ${PostOP}
+                CMD=(ebook-convert ${OUTPUT} ${PostOP});;
+    esac
+    [[ -n ${CMD} ]] && run_cmd
+} #}}}
+pandoc_cmd() { #{{{
+    CMD=(pandoc)
+    ${PRESET} && CMD+=(--parse-raw --smart --normalize)
+    [[ -n ${PANDOC_ARGS} ]] && CMD+=(${PANDOC_ARGS[@]})
+    case ${OUTPUT:e} in
+        'pdf')
+            CMD+=(--latex-engine=xelatex);;
+        'pandoc')
+            CMD+=(-tmarkdown);;
+        'mdown')
+            CMD+=(-tmarkdown);;
+        'epub')
+            ${FONTS} && {
+                for f (${FontFiles}) {
+                    CMD+=(--epub-embed-font=${f})
+                }
+            }
+            [[ -f 'metadata.xml' ]] && CMD+=(--epub-metadata=metadata.xml)
+            if [[ -f 'cover.png' ]] {
+                CMD+=(--epub-cover-image=cover.png)
+            } elif [[ -f 'cover.jpg' ]] {
+                CMD+=(--epub-cover-image=cover.jpg)
+            }
+            ;;
+        'html')
+            CMD+=(-w html5 -c ~/.pandoc/epub.css);
+            [[ -f 'head.html' ]] && CMD+=(-Hhead.html);;
+        'html5')
+            CMD+=(-c ~/.pandoc/epub.css);
+            [[ -f 'head.html' ]] && CMD+=(-Hhead.html);;
+    esac
+    if [[ -d 'citations' ]] {
+        for bib (citations/*.*) {
+           CMD+=(--bibliography=${bib})
+        }
+    }
+    CMD+=(-o${OUTPUT} $@)
+    run_cmd
+} #}}}
+[[ -r ${CONF} ]] && source ${CONF}
+process_options ${~SOURCES[@]:a} $@
+[[ -n ${OUTPUT} ]] || manpage
+[[ -f ${OUTPUT} ]] && rm ${OUTPUT}
+pandoc_cmd ${ARGS[@]}
+post_ops
+exit 0
