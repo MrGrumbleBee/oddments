@@ -1,16 +1,91 @@
 #!/usr/bin/zsh
-typeset -a Services
-typeset CONF='~/check-services.cf'
-if [[ -r ${~CONF} ]] { #{{{
-    Services=$(grep -v '\#' ${~CONF})
-} else {
-    print "Can't read ${CONF}"
+typeset CONF='~/check-services.cf' VERBOSE=0 DEBUG=false RESTART=false
+die() {  #{{{
+    print $@
+    exit 1
 } #}}}
-for S (${(f)Services}) { #{{{
-    TEST=$(sudo service ${S} status)
-    if [[ "${TEST}" =~ 'is running|start/running' ]] {
-        print "Service ${S} OK."
-    } else {
-    print "Service ${S} not OK. (${TEST})"
+usage() { #{{{
+    typeset PANDOC; PANDOC=$(whence pandoc)
+    [[ -x ${PANDOC} ]] || {
+        print "Error: 'pandoc' not in path."
+        exit
+    }
+    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+	% CHECK-SERVICES(1) check-services user manual
+	% Garrison Hoffman <garrison.hoffman@gmail.com>
+	
+	# NAME
+	
+	check-services --- check-services user manual
+	
+	# SYNOPSIS
+	
+	check-services [*OPTIONS*]
+	
+	# DESCRIPTION
+	
+	This script uses **service(8)** to query System V init scripts or
+	upstart jobs, optionally restarting services where needed.
+	
+	# OPTIONS
+	
+	-c *FILE*, \--config=*FILE*
+	:   Specify an alternative to *~/check-services.cf*
+	-d, \--debug
+	:   Print commands, rather than executing them.
+	-h, \--help
+	:   Show usage, then exit.
+	-r, \--restart
+	:   Restart any stopped services.
+	-v, -q
+	:   Increment, decrement verbosity with each use.
+	    The default verbosity (0) prints only services which are not running.
+	\--verbosity=*N*
+	:   Set an explicit verbosity level.
+	EOF
+    exit
+} #}}}
+process_options() { #{{{
+    PARAMS=$(getopt -o c:dhqrv \
+        --long config:,debug,help,quiet::,restart,verbose:: \
+        -n $0 -- "$@")
+    # Bail unless getopt returned 0
+    [[ $? = 0 ]] || die Terminating...
+
+    eval set -- ${PARAMS}
+    while true; do
+        case ${1} in
+            -c | --config)  CONF=$2;      shift 2;;
+            -d | --debug)   DEBUG=true;   shift;;
+            -h | --help)    usage;        shift;;
+            -r | --restart) RESTART=true; shift;;
+
+            -q)             VERBOSE=$(( ${VERBOSE} - 1 )); shift;;
+            -v)             VERBOSE=$(( ${VERBOSE} + 1 )); shift;;
+            --verbose)      case ${2} in
+                            "") VERBOSE=$(( ${VERBOSE} + 1 ));    shift 2;;
+                            *) VERBOSE=$(( ${VERBOSE} + ${2} )); shift 2;;
+                            esac;;
+
+            --) shift; break;;
+             *) usage;;
+        esac
+    done
+    ARGS+=($@)
+} #}}}
+loop_services () { #{{{
+    typeset -a Services
+    [[ -r ${~CONF} ]] && Services=$(grep -v '\#' ${~CONF})
+    for S (${(f)Services}) {
+        TEST=$(sudo service ${S} status)
+        if [[ "${TEST}" =~ 'is running|start/running' ]] {
+            [[ ${VERBOSE} > 0 ]] && print "Service ${S} OK."
+        } else {
+            [[ ${VERBOSE} > -1 ]] && print "Service ${S} not OK. (${TEST})"
+            ${RESTART} && sudo service ${S} restart
+        }
     }
 } #}}}
+process_options $@
+[[ -r ${~CONF} ]] || die "Can't read ${CONF}"
+loop_services
