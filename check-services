@@ -31,8 +31,6 @@ usage() { #{{{
 	
 	-c *FILE*, \--config=*FILE*
 	:   Specify an alternative to *~/check-services.cf*
-	-d, \--debug
-	:   Print commands, rather than executing them.
 	-h, \--help
 	:   Show usage, then exit.
 	-r, \--restart
@@ -46,8 +44,8 @@ usage() { #{{{
     exit
 } #}}}
 process_options() { #{{{
-    PARAMS=$(getopt -o c:dhqrv \
-        --long config:,debug,help,quiet::,restart,verbose:: \
+    PARAMS=$(getopt -o c:hqrv \
+        --long config:,help,quiet::,restart,verbose:: \
         -n $0 -- "$@")
     # Bail unless getopt returned 0
     [[ $? = 0 ]] || die Terminating...
@@ -56,7 +54,6 @@ process_options() { #{{{
     while true; do
         case ${1} in
             -c | --config)  CONF=$2;      shift 2;;
-            -d | --debug)   DEBUG=true;   shift;;
             -h | --help)    usage;        shift;;
             -r | --restart) RESTART=true; shift;;
 
