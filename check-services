@@ -1,7 +1,7 @@
 #!/usr/bin/zsh
-typeset CONF='~/check-services.cf' VERBOSE=0 DEBUG=false RESTART=false
+typeset CONF='~/check-services.cf' VERBOSE=0 ExitVal=0 RESTART=false
 die() {  #{{{
-    print $@
+    (( VERBOSE > -2 )) && print $@
     exit 1
 } #}}}
 usage() { #{{{
@@ -10,13 +10,13 @@ usage() { #{{{
         print "Error: 'pandoc' not in path."
         exit
     }
-    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+    { pandoc --normalize --standalone --write=man | man -l - } <<-\EOF
 	% CHECK-SERVICES(1) check-services user manual
 	% Garrison Hoffman <garrison.hoffman@gmail.com>
 	
 	# NAME
 	
-	check-services --- check-services user manual
+	check-services — check-services user manual
 	
 	# SYNOPSIS
 	
@@ -27,6 +27,10 @@ usage() { #{{{
 	This script uses **service(8)** to query System V init scripts or
 	upstart jobs, optionally restarting services where needed.
 	
+	The script will exit **TRUE** if all services are found running, otherwise
+	the exit value will be equivalent to the number of configured services
+	not running or restarted.
+	
 	# OPTIONS
 	
 	-c *FILE*, \--config=*FILE*
@@ -34,12 +38,27 @@ usage() { #{{{
 	-h, \--help
 	:   Show usage, then exit.
 	-r, \--restart
-	:   Restart any stopped services.
+	:   Use **service(8)** to restart any stopped services.
 	-v, -q
 	:   Increment, decrement verbosity with each use.
-	    The default verbosity (0) prints only services which are not running.
 	\--verbosity=*N*
 	:   Set an explicit verbosity level.
+	
+	# VERBOSITY LEVELS
+	
+	-vv (\--verbose=*2*)
+	:   Print full status of all configured services.
+	-v  (\--verbose=*1*)
+	:   Include abbreviated status of running services.
+	\--verbose=*0*
+	:   Print full status for services which are not running.
+	-q  (\--verbose=*-1*)
+	:   Print abbreviated status for services which are not running.
+	-qq (\--verbose=*-2*)
+	:   Disable status messages entirely. No output will be produced
+	    by this script, though messages from **service(8)** restarts are not
+	    surpressed. (see **--restart**)
+	
 	EOF
     exit
 } #}}}
@@ -57,11 +76,11 @@ process_options() { #{{{
             -h | --help)    usage;        shift;;
             -r | --restart) RESTART=true; shift;;
 
-            -q)             VERBOSE=$(( ${VERBOSE} - 1 )); shift;;
-            -v)             VERBOSE=$(( ${VERBOSE} + 1 )); shift;;
+            -q)             (( VERBOSE-- )); shift;;
+            -v)             (( VERBOSE++ )); shift;;
             --verbose)      case ${2} in
-                            "") VERBOSE=$(( ${VERBOSE} + 1 ));    shift 2;;
-                            *) VERBOSE=$(( ${VERBOSE} + ${2} )); shift 2;;
+                            "") (( VERBOSE++ )); shift 2;;
+                            *) VERBOSE=${2};     shift 2;;
                             esac;;
 
             --) shift; break;;
@@ -70,19 +89,34 @@ process_options() { #{{{
     done
     ARGS+=($@)
 } #}}}
-loop_services () { #{{{
-    typeset -a Services
-    [[ -r ${~CONF} ]] && Services=$(grep -v '\#' ${~CONF})
-    for S (${(f)Services}) {
-        TEST=$(sudo service ${S} status)
-        if [[ "${TEST}" =~ 'is running|start/running' ]] {
-            [[ ${VERBOSE} > 0 ]] && print "Service ${S} OK."
-        } else {
-            [[ ${VERBOSE} > -1 ]] && print "Service ${S} not OK. (${TEST})"
-            ${RESTART} && sudo service ${S} restart
+test_service () { #{{{
+    typeset SERVICE=${1} STATUS
+    STATUS=$(sudo service ${SERVICE} status |& cat)
+    if [[ "${STATUS}" =~ 'is running|start/running' ]] {
+        (( ${VERBOSE} > 0 )) && {
+            print -Pn "%F{c}[%F{g}GOOD%F{c}] %B${SERVICE}%b %f"
+            (( ${VERBOSE} > 1 )) && print -n ${STATUS}
+            print ''
         }
+    } else {
+        (( ExitVal++ ))
+        (( VERBOSE > -2 )) && {
+            print -Pn "%F{c}[%F{y}WARN%F{c}] %F{r}%B${S}%b %f"
+            (( ${VERBOSE} > -1 )) && print -n ${STATUS}
+            print ''
+        }
+        ${RESTART} && sudo service ${S} restart
     }
 } #}}}
+loop_services () { #{{{
+    typeset -a Services
+    if [[ -r ${~CONF} ]] {
+        Services=$(grep -v '\#' ${~CONF})
+    } else {
+        die "Can't read ${CONF}"
+    }
+    for S (${(f)Services}) { test_service ${S} }
+    exit ${ExitVal}
+} #}}}
 process_options $@
-[[ -r ${~CONF} ]] || die "Can't read ${CONF}"
 loop_services
