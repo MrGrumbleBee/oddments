@@ -85,11 +85,11 @@ process_options() { #{{{
             -d | --debug)   DEBUG=true;   shift;;
             -h | --help)    usage;        shift;;
 
-            -q)             VERBOSE=$(( ${VERBOSE} - 1 )); shift;;
-            -v)             VERBOSE=$(( ${VERBOSE} + 1 )); shift;;
+            -q)             (( VERBOSE-- )); shift;;
+            -v)             (( VERBOSE++ )); shift;;
             --verbose)      case ${2} in
-                            "") VERBOSE=$(( ${VERBOSE} + 1 ));    shift 2;;
-                            *) VERBOSE=$(( ${VERBOSE} + ${2} )); shift 2;;
+                            "") (( VERBOSE++ )); shift 2;;
+                            *) VERBOSE=${2};     shift 2;;
                             esac;;
 
             --) shift; break;;
