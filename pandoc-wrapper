@@ -22,18 +22,18 @@ manpage() { #{{{
         print "Error: 'pandoc' not in path."
         exit
     }
-    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+    { pandoc --normalize --standalone --write=man | man -l - } <<-\EOF
 	% PANDOC-WRAPPER(1) pandoc-wrapper user manual
 	% Garrison Hoffman <garrison@codefix.net>
 	% Fri 07 Sep 2012
 	
 	# NAME
 	
-	pandoc-wrapper --- wrapper script for pandoc
+	pandoc-wrapper — wrapper script for pandoc
 	
 	# SYNOPSIS
 	
-	pandoc-wrapper [*options*] [*input-file*]... \-- [*pandoc options*]
+	pandoc-wrapper [*options*]  [*input-files*] -- [*pandoc options*]
 	
 	# DESCRIPTION
 	
@@ -58,13 +58,11 @@ manpage() { #{{{
 	-n, --no-preset
 	:   Do not automatically enable `--parse-raw --smart --normalize`
 	
-	-q, --quiet *INT*
-	:   The short form decrements verbosity by one and may be used
-	    repeatedly, the long form decrements verbosity by *INT*.
+	-v, -q
+	:   Increment or decrement verbosity by one, may be used repeatedly.
 	
-	-v, --verbose *INT*
-	:   The short form increments verbosity by one and may be used
-	    repeatedly, the long form increments verbosity by *INT*.
+	--verbose *INT*
+	:   Set an explicit verbosity level.
 	
 	# CONFIG VARIABLES
 	
@@ -114,10 +112,9 @@ process_options() { #{{{
             -f | --fonts)       FONTS=true;;
             -o | --output)      OUTPUT=${OPTS[$o]};;
             -n | --no-preset)   PRESET=false;;
+                 --verbose)     let VERBOSE=${OPTS[$o]};;
             -q)                 let VERBOSE-=${#QT};;
-                 --quiet)       let VERBOSE-=${OPTS[$o]};;
             -v)                 let VERBOSE+=${#VB};;
-                 --verbose)     let VERBOSE+=${OPTS[$o]};;
         esac
     }
     for x ($@) {

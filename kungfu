@@ -132,13 +132,13 @@ manpage() { #{{{
         print "Error: 'pandoc' not in path."
         exit
     }
-    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+    { pandoc --normalize --standalone --write=man | man -l - } <<-\EOF
 	% KUNGFU(1) KungFu user manual
 	% Garrison Hoffman <garrison@codefix.net>
 	
 	# NAME
 	
-	kungfu --- KungFu user manual
+	kungfu — KungFu user manual
 	
 	# SYNOPSIS
 	
@@ -170,25 +170,25 @@ manpage() { #{{{
 	
 	# OPTIONS
 	
-	-d, \--debug
+	-d, --debug
 	:   Print commands, rather than executing them.
-	-e, \--edit
+	-e, --edit
 	:   Edit the .kungfu file, then exit. If no file exists,
 	    one will be created with default values.
-	-h, \--help
+	-h, --help
 	:   Show usage, then exit.
-	-o *DIR*, \--opendir=*DIR*
+	-o *DIR*, --opendir *DIR*
 	:   See **CONFIG FILE VARIABLES**
-	-w, \--workdir=*DIR*
+	-w, --workdir *DIR*
 	:   Set the working directory; defaults to *${PWD}*.
-	-x *EXEC*, \--xopener=*EXEC*
+	-x *EXEC*, --xopener *EXEC*
 	:   See **CONFIG FILE VARIABLES**.
-	-u, \--update
+	-u, --update
 	:   Update *.kungfu* file; if an existing file is found, a
 	    backup will be created and sourced.
 	-v, -q
 	:   Increment, decrement verbosity with each use.
-	--verbosity=*N*
+	--verbosity *N*
 	:   Set an explicit verbosity level.
 	
 	# KUNGFU CONFIG FILE
@@ -286,10 +286,10 @@ swap_check() { #{{{
 process_options() { #{{{
     typeset CACHE=false
     # Process les parametrices… #{{{
-    zparseopts -E -D -AOPTS -- d -debug v+=VB -verbose: q+=QT -quiet: \
+    zparseopts -E -D -AOPTS -- d -debug v+=VT -verbose: q+=QT -quiet: \
         h -help -no-help e -edit -cache \
         o: -opendir: w: -workdir: x: -xopener: u -update
-    [[ $? = 0 ]] || print "Error ${status}!"
+    [[ $? = 0 ]] || exit ${status}
     for o (${(k)OPTS}) {
         case ${o} in
             -d | --debug)   DEBUG=true;;
@@ -301,10 +301,9 @@ process_options() { #{{{
             -x | --xopener) XOPENER=${OPTS[$o]};;
             -w | --workdir) WORKDIR=${OPTS[$o]:a};;
             -o | --opendir) OPENDIR=${OPTS[$o]:a};;
+                 --verbose) let VERBOSE=${OPTS[$o]/=/};;
             -q)             let VERBOSE-=${#QT};;
-                 --quiet)   let VERBOSE-=${OPTS[$o]};;
-            -v)             let VERBOSE+=${#VB};;
-                 --verbose) let VERBOSE+=${OPTS[$o]};;
+            -v)             let VERBOSE+=${#VT};;
         esac
     } #}}}
     # Post-Opt defaults… #{{{

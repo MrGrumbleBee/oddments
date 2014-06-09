@@ -6,13 +6,13 @@ usage() { #{{{
         print "Error: 'pandoc' not in path."
         exit
     }
-    { pandoc --normalize -RSst man | man -l - } <<-\EOF
+    { pandoc --normalize --standalone --write=man | man -l - } <<-\EOF
 	% CHAPTERS(1) chapters user manual
 	% Garrison Hoffman <garrison@codefix.net>
 	
 	# NAME
 	
-	chapters --- chapters user manual
+	chapters — chapters user manual
 	
 	# SYNOPSIS
 	
@@ -23,7 +23,7 @@ usage() { #{{{
 	# DESCRIPTION
 	
 	Chapters helps rename audiobook files to a standard format preferred by
-	the author. Unpack mode (**\--unpack**) will unzip and rename
+	the author. Unpack mode (**--unpack**) will unzip and rename
 	downpour.com files, which must then be renamed where chapters begin, e.g.
 	
 	    01 Chapter One.mp3
@@ -32,21 +32,21 @@ usage() { #{{{
 	    04 .mp3
 	
 	Running chapters at this point, giving the file's directory as an argument
-	will fill in the names of missing files. Run with **\--debug** to preview 
+	will fill in the names of missing files. Run with **--debug** to preview
 	without actually renaming any files.
 	
 	# OPTIONS
 	
-	-u *DIR*, \--unpack=*DIR*
+	-u *DIR*, --unpack=*DIR*
 	:   Unpack specified archives to *DIR* and rename.
 	    (e.g. **01\ .mp3**, **02\ .mp3**...)
-	-d, \--debug
+	-d, --debug
 	:   Print commands, rather than executing them.
-	-h, \--help
+	-h, --help
 	:   Show usage, then exit.
 	-v, -q
 	:   Increment, decrement verbosity with each use.
-	\--verbosity=*N*
+	--verbosity=*N*
 	:   Set an explicit verbosity level.
 	EOF
 } #}}}
@@ -75,7 +75,7 @@ process_options() { #{{{
         --long chapter:,debug,help,quiet::,unpack:,verbose:: \
         -n $0 -- "$@")
     # Bail unless getopt returned 0
-    [[ $? = 0 ]] || die Terminating...
+    [[ $? = 0 ]] || print Terminating...
 
     eval set -- ${PARAMS}
     while true; do
@@ -85,11 +85,11 @@ process_options() { #{{{
             -d | --debug)   DEBUG=true;   shift;;
             -h | --help)    usage;        shift;;
 
-            -q)             (( VERBOSE-- )); shift;;
-            -v)             (( VERBOSE++ )); shift;;
+            -q)             let VERBOSE--; shift;;
+            -v)             let VERBOSE++; shift;;
             --verbose)      case ${2} in
-                            "") (( VERBOSE++ )); shift 2;;
-                            *) VERBOSE=${2};     shift 2;;
+                            "") let VERBOSE++;    shift 2;;
+                             *) let VERBOSE=${2}; shift 2;;
                             esac;;
 
             --) shift; break;;

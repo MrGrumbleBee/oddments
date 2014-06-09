@@ -1,9 +1,8 @@
 #!/bin/zsh
-die() {  # {{{
+die() { #{{{
     print $@
     exit 1
-}
-# }}}
+} #}}}
 usage() {  #{{{
     cat << EOF
 Usage: gits [options] DIRLIST -- WORD [git options]
@@ -47,11 +46,11 @@ process_options() { # {{{
             -r | --recurse) RECURSE=true; shift;;
             -h | --help)    usage;        shift;;
 
-            -q)             VERBOSE=$(( ${VERBOSE} - 1 )); shift;;
-            -v)             VERBOSE=$(( ${VERBOSE} + 1 )); shift;;
+            -q)             let VERBOSE--; shift;;
+            -v)             let VERBOSE++; shift;;
             --verbose)      case ${2} in
-                            "") VERBOSE=$(( ${VERBOSE} + 1 ));    shift 2;;
-                            *) VERBOSE=$(( ${VERBOSE} + ${2} )); shift 2;;
+                            "") let VERBOSE++;      shift 2;;
+                             *) let VERBOSE=${2};   shift 2;;
                             esac;;
 
             --) shift; break;;
