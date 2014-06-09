@@ -1,5 +1,5 @@
 #!/usr/bin/zsh
-typeset CONF='~/check-services.cf' VERBOSE=0 ExitVal=0 RESTART=false
+typeset CONF='~/check-services.cf' VERBOSE=0 ExitVal=0 RESTART=false COLOR=true
 die() {  #{{{
     (( VERBOSE > -2 )) && print $@
     exit 1
@@ -33,28 +33,30 @@ usage() { #{{{
 	
 	# OPTIONS
 	
-	-c *FILE*, \--config=*FILE*
+	-c *FILE*, --config=*FILE*
 	:   Specify an alternative to *~/check-services.cf*
-	-h, \--help
+	--color, --no-color
+	:   Enable or disable color output.
+	-h, --help
 	:   Show usage, then exit.
-	-r, \--restart
+	-r, --restart
 	:   Use **service(8)** to restart any stopped services.
 	-v, -q
 	:   Increment, decrement verbosity with each use.
-	\--verbosity=*N*
+	--verbosity=*N*
 	:   Set an explicit verbosity level.
 	
 	# VERBOSITY LEVELS
 	
-	-vv (\--verbose=*2*)
+	-vv (--verbose=*2*)
 	:   Print full status of all configured services.
-	-v  (\--verbose=*1*)
+	-v  (--verbose=*1*)
 	:   Include abbreviated status of running services.
-	\--verbose=*0*
+	--verbose=*0*
 	:   Print full status for services which are not running.
-	-q  (\--verbose=*-1*)
+	-q  (--verbose=*-1*)
 	:   Print abbreviated status for services which are not running.
-	-qq (\--verbose=*-2*)
+	-qq (--verbose=*-2*)
 	:   Disable status messages entirely. No output will be produced
 	    by this script, though messages from **service(8)** restarts are not
 	    surpressed. (see **--restart**)
@@ -64,7 +66,7 @@ usage() { #{{{
 } #}}}
 process_options() { #{{{
     PARAMS=$(getopt -o c:hqrv \
-        --long config:,help,quiet::,restart,verbose:: \
+        --long config:,color,no-color,help,quiet::,restart,verbose:: \
         -n $0 -- "$@")
     # Bail unless getopt returned 0
     [[ $? = 0 ]] || die Terminating...
@@ -75,6 +77,8 @@ process_options() { #{{{
             -c | --config)  CONF=$2;      shift 2;;
             -h | --help)    usage;        shift;;
             -r | --restart) RESTART=true; shift;;
+            --color)        COLOR=true;   shift;;
+            --no-color)     COLOR=false;  shift;;
 
             -q)             (( VERBOSE-- )); shift;;
             -v)             (( VERBOSE++ )); shift;;
@@ -94,14 +98,16 @@ test_service () { #{{{
     STATUS=$(sudo service ${SERVICE} status |& cat)
     if [[ "${STATUS}" =~ 'is running|start/running' ]] {
         (( ${VERBOSE} > 0 )) && {
-            print -Pn "%F{c}[%F{g}GOOD%F{c}] %B${SERVICE}%b %f"
+            ${COLOR} && print -Pn "%F{c}[%F{g}GOOD%F{c}] %B${SERVICE}%b %f"
+            ${COLOR} || print -Pn "[GOOD] ${SERVICE} "
             (( ${VERBOSE} > 1 )) && print -n ${STATUS}
             print ''
         }
     } else {
         (( ExitVal++ ))
         (( VERBOSE > -2 )) && {
-            print -Pn "%F{c}[%F{y}WARN%F{c}] %F{r}%B${S}%b %f"
+            ${COLOR} && print -Pn "%F{c}[%F{y}WARN%F{c}] %F{r}%B${S}%b %f"
+            ${COLOR} || print -Pn "[WARN] ${S} "
             (( ${VERBOSE} > -1 )) && print -n ${STATUS}
             print ''
         }
