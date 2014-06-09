@@ -127,8 +127,14 @@ unpack_downpour() { #{{{
     }
     cd ${UNPACK}
     typeset opt
-    ${DEBUG} && fprint "rename 's/.*?\b(\d+).*\./\$1 ./' *"
-    ${DEBUG} || rename 's/.*?\b(\d+).*\./$1 ./' *
+    ${DEBUG} && {
+        fprint "rename 's/.*?\b(\d+).*\./\$1 ./' *"
+        fprint "chmod -x %F{g}${UNPACK}/*"
+    }
+    ${DEBUG} || {
+        rename 's/.*?\b(\d+).*\./$1 ./' *
+        chmod -x "${UNPACK}/*"
+    }
 } #}}}
 process_options $@
 [[ -n ${UNPACK} ]] && unpack_downpour ${ARGS[@]}
