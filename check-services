@@ -95,12 +95,28 @@ process_options() { #{{{
 } #}}}
 get_pid() { #{{{
     typeset PID
+    # Use stated PID if available.
     if [[ ${2} =~ '\d\d\d+' ]] {
         PID=${MATCH}
+    } elif [[ -r "/var/run/${1}.pid" ]] {
+        PID=$(< /var/run/${1}.pid)
+    # Process name overrides... #{{{
+    } elif [[ ${1} = 'bind9' ]] {
+        PID=$(pgrep -o named)
+    } elif [[ ${1} = 'clamav-daemon' ]] {
+        PID=$(pgrep -o clamd)
+    } elif [[ ${1} = 'clamav-freshclam' ]] {
+        PID=$(pgrep -o freshclam)
+    #}}}
     } else {
-        PID=$(pgrep -fo ${1})
+        PID=$(pgrep -of ${1})
     }
-    print ${PID}
+    # Pad low PID
+    if (( ${#PID} < 4 )) {
+        print ${(l:4::0:)PID}
+    } else {
+        print ${PID}
+    }
 } #}}}
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID

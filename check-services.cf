@@ -4,6 +4,7 @@ apache2
 bind9
 clamav-daemon
 clamav-freshclam
+denyhosts
 dovecot
 mysql
 postfix
