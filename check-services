@@ -1,6 +1,6 @@
 #!/usr/bin/zsh
 typeset CONF='~/check-services.cf' VERBOSE=0 ExitVal=0 RESTART=false COLOR=true
-die() {  #{{{
+die() { #{{{
     (( VERBOSE > -2 )) && print $@
     exit 1
 } #}}}
@@ -66,7 +66,7 @@ usage() { #{{{
 } #}}}
 process_options() { #{{{
     PARAMS=$(getopt -o c:hqrv \
-        --long config:,color,no-color,help,quiet::,restart,verbose:: \
+        --long config:,color,no-color,help,restart,verbose:: \
         -n $0 -- "$@")
     # Bail unless getopt returned 0
     [[ $? = 0 ]] || die Terminating...
@@ -93,13 +93,23 @@ process_options() { #{{{
     done
     ARGS+=($@)
 } #}}}
+get_pid() { #{{{
+    typeset PID
+    if [[ ${2} =~ '\d\d\d+' ]] {
+        PID=${MATCH}
+    } else {
+        PID=$(pgrep -fo ${1})
+    }
+    print ${PID}
+} #}}}
 test_service () { #{{{
-    typeset SERVICE=${1} STATUS
+    typeset SERVICE=${1} STATUS PID
     STATUS=$(sudo service ${SERVICE} status |& cat)
     if [[ "${STATUS}" =~ 'is running|start/running' ]] {
         (( ${VERBOSE} > 0 )) && {
-            ${COLOR} && print -Pn "%F{c}[%F{g}GOOD%F{c}] %B${SERVICE}%b %f"
-            ${COLOR} || print -Pn "[GOOD] ${SERVICE} "
+            PID=$(get_pid ${SERVICE} ${STATUS})
+            ${COLOR} && print -Pn "%F{c}[%F{g}${PID}%F{c}] %B${SERVICE}%b %f"
+            ${COLOR} || print -Pn "[${PID}] ${SERVICE} "
             (( ${VERBOSE} > 1 )) && print -n ${STATUS}
             print ''
         }
