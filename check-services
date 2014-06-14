@@ -120,7 +120,7 @@ get_pid() { #{{{
 } #}}}
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID
-    STATUS=$(sudo service ${SERVICE} status |& cat)
+    STATUS=$(sudo service ${SERVICE} status |& perl -pe "s/[* ]*${SERVICE} //")
     if [[ "${STATUS}" =~ 'is running|start/running' ]] {
         (( ${VERBOSE} > 0 )) && {
             PID=$(get_pid ${SERVICE} ${STATUS})
