@@ -118,15 +118,24 @@ get_pid() { #{{{
         print ${PID}
     }
 } #}}}
+get_service () { #{{{
+    typeset STATUS
+    STATUS=$(sudo service ${1} status |& cat)
+    if [[ "${STATUS}" =~ '(is running|start/running|unrecognized).*' ]] {
+        print ${MATCH}
+    } else {
+        print ${STATUS}
+    }
+} #}}}
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID
-    STATUS=$(sudo service ${SERVICE} status |& perl -pe "s/[* ]*${SERVICE} //")
-    if [[ "${STATUS}" =~ 'unrecognized service' ]] {
+    STATUS=$(get_service ${SERVICE})
+    if [[ "${STATUS}" =~ 'unrecognized' ]] {
         (( ${VERBOSE} > 1 )) && {
-            ${COLOR} && print -P "%F{blu}[----] ${SERVICE} (${MATCH})%b%f"
-            ${COLOR} || print -Pn "[----] ${SERVICE} (${MATCH})"
+            ${COLOR} && print -P "%F{blu}[----] ${SERVICE} (${STATUS})%b%f"
+            ${COLOR} || print -Pn "[----] ${SERVICE} (${STATUS})"
         }
-    } elif [[ "${STATUS}" =~ 'is running|start/running' ]] {
+    } elif [[ "${STATUS}" =~ 'running' ]] {
         (( ${VERBOSE} > 0 )) && {
             PID=$(get_pid ${SERVICE} ${STATUS})
             ${COLOR} && print -Pn "%F{c}[%F{g}${PID}%F{c}] %B${SERVICE}%b %F{c}"
