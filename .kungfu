@@ -12,11 +12,12 @@
 
 SOURCES=(
 #   'keyword' 'files to open with EDITOR or EDITORS[keyword]'
-    'all'       '*'
-    'kungfu'    'kungfu'
-    'passwork'  'passwork'
-    'gits'      'gits'
-    'plot'      'plot-prompts.dat/* plot-prompts'
+    'all'               '*'
+    'check-services'    'check-services'
+    'kungfu'            'kungfu'
+    'passwork'          'passwork'
+    'gits'              'gits'
+    'plot'              'plot-prompts.dat/* plot-prompts'
 )
 
 # TARGETS=(
