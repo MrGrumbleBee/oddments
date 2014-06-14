@@ -127,37 +127,41 @@ get_status () { #{{{
         print ${STATUS}
     }
 } #}}}
+output () { #{{{
+    typeset PID=${1} SERVICE=${2} STATUS=${3} C1=${4} C2=${5}
+    ${COLOR} && {
+        print -Pn "%F{blue}[%F{${C2}}${PID}%F{blue}] "
+        print -Pn "%F{${C1}}%B${SERVICE}%b"
+        print -P " %F{${C2}}${STATUS}%f"
+    }
+    ${COLOR} || print "[${PID}] ${SERVICE} ${STATUS}"
+} #}}}
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID
     STATUS=$(get_status ${SERVICE})
     if [[ "${STATUS}" =~ 'unrecognized' ]] {
         (( ${VERBOSE} > 1 )) && {
-            ${COLOR} && print -P "%F{blu}[----] ${SERVICE} (${STATUS})%b%f"
-            ${COLOR} || print -P "[----] ${SERVICE} (${STATUS})"
+            output '----' ${SERVICE} ${STATUS} black blue
         }
     } elif [[ "${STATUS}" =~ 'running' ]] {
         (( ${VERBOSE} > 0 )) && {
             PID=$(get_pid ${SERVICE} ${STATUS})
-            ${COLOR} && print -Pn "%F{c}[%F{g}${PID}%F{c}] %B${SERVICE}%b %F{c}"
-            ${COLOR} || print -Pn "[${PID}] ${SERVICE} "
-            (( ${VERBOSE} > 1 )) && print -n ${STATUS}
-            print ''
+            (( ${VERBOSE} < 2 )) && STATUS=''
+            output ${PID} ${SERVICE} "${STATUS}" blue magenta
         }
     } else {
         (( ExitVal++ ))
         (( VERBOSE > -2 )) && {
-            ${COLOR} && print -Pn "%F{c}[%F{y}WARN%F{c}] %F{r}%B${S}%b %F{y}"
-            ${COLOR} || print -Pn "[WARN] ${S} "
-            (( ${VERBOSE} > -1 )) && print -n ${STATUS}
-            print ''
+            (( ${VERBOSE} < 0 )) && STATUS=''
+            output 'WARN' ${SERVICE} "${STATUS}" red yellow
         }
-        ${RESTART} && sudo service ${S} restart
+        ${RESTART} && sudo service ${SERVICE} restart
     }
 } #}}}
 loop_services () { #{{{
     typeset -a Services
     if [[ -r ${~CONF} ]] {
-        Services=$(grep -v '\#' ${~CONF})
+        Services=$(grep -v '^#' ${~CONF})
     } else {
         die "Can't read ${CONF}"
     }
