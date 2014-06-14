@@ -118,7 +118,7 @@ get_pid() { #{{{
         print ${PID}
     }
 } #}}}
-get_service () { #{{{
+get_status () { #{{{
     typeset STATUS
     STATUS=$(sudo service ${1} status |& cat)
     if [[ "${STATUS}" =~ '(is running|start/running|unrecognized).*' ]] {
@@ -129,7 +129,7 @@ get_service () { #{{{
 } #}}}
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID
-    STATUS=$(get_service ${SERVICE})
+    STATUS=$(get_status ${SERVICE})
     if [[ "${STATUS}" =~ 'unrecognized' ]] {
         (( ${VERBOSE} > 1 )) && {
             ${COLOR} && print -P "%F{blu}[----] ${SERVICE} (${STATUS})%b%f"
