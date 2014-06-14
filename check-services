@@ -133,7 +133,7 @@ test_service () { #{{{
     if [[ "${STATUS}" =~ 'unrecognized' ]] {
         (( ${VERBOSE} > 1 )) && {
             ${COLOR} && print -P "%F{blu}[----] ${SERVICE} (${STATUS})%b%f"
-            ${COLOR} || print -Pn "[----] ${SERVICE} (${STATUS})"
+            ${COLOR} || print -P "[----] ${SERVICE} (${STATUS})"
         }
     } elif [[ "${STATUS}" =~ 'running' ]] {
         (( ${VERBOSE} > 0 )) && {
