@@ -121,7 +121,12 @@ get_pid() { #{{{
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID
     STATUS=$(sudo service ${SERVICE} status |& perl -pe "s/[* ]*${SERVICE} //")
-    if [[ "${STATUS}" =~ 'is running|start/running' ]] {
+    if [[ "${STATUS}" =~ 'unrecognized service' ]] {
+        (( ${VERBOSE} > 1 )) && {
+            ${COLOR} && print -P "%F{blu}[----] ${SERVICE} (${MATCH})%b%f"
+            ${COLOR} || print -Pn "[----] ${SERVICE} (${MATCH})"
+        }
+    } elif [[ "${STATUS}" =~ 'is running|start/running' ]] {
         (( ${VERBOSE} > 0 )) && {
             PID=$(get_pid ${SERVICE} ${STATUS})
             ${COLOR} && print -Pn "%F{c}[%F{g}${PID}%F{c}] %B${SERVICE}%b %F{c}"
