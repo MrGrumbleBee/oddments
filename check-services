@@ -134,7 +134,7 @@ output () { #{{{
         print -Pn "%F{${C1}}%B${SERVICE}%b"
         print -P " %F{${C2}}${STATUS}%f"
     }
-    ${COLOR} || print "[${PID}] ${SERVICE} ${STATUS}"
+    ${COLOR} || print "[${PID}] ${SERVICE} (${STATUS})"
 } #}}}
 test_service () { #{{{
     typeset SERVICE=${1} STATUS PID
