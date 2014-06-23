@@ -143,7 +143,7 @@ test_service () { #{{{
         (( ${VERBOSE} > 1 )) && {
             output '----' ${SERVICE} ${STATUS} black blue
         }
-    } elif [[ "${STATUS}" =~ 'running' ]] {
+    } elif [[ "${STATUS}" =~ 'start/running|is running' ]] {
         (( ${VERBOSE} > 0 )) && {
             PID=$(get_pid ${SERVICE} ${STATUS})
             (( ${VERBOSE} < 2 )) && STATUS=''
