@@ -133,7 +133,7 @@ unpack_downpour() { #{{{
     }
     ${DEBUG} || {
         rename 's/.*?\b(\d+).*\./$1 ./' *
-        chmod -x "${UNPACK}/*"
+        chmod -x *
     }
 } #}}}
 process_options $@
