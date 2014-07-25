@@ -116,7 +116,7 @@ rename_chapters() { #{{{
         }
     }
 } #}}}
-unpack_downpour() { #{{{
+do_unzip() { #{{{
     for File ($@) {
         if [[ ${File:e} =~ 'zip' ]] {
             ${DEBUG} && fprint "unzip -jod %F{g}${UNPACK} %F{y}${File}"
@@ -125,8 +125,8 @@ unpack_downpour() { #{{{
             fprint 0 "%F{red}Unsupported archive type: %F{y}${File:e}"
         }
     }
-    cd ${UNPACK}
-    typeset opt
+} #}}}
+rename_dp { #{{{
     ${DEBUG} && {
         fprint "rename 's/.*?\b(\d+).*\./\$1 ./' *"
         fprint "chmod -x %F{g}${UNPACK}/*"
@@ -135,6 +135,21 @@ unpack_downpour() { #{{{
         rename 's/.*?\b(\d+).*\./$1 ./' *
         chmod -x *
     }
+} #}}}
+rename_mp4 { #{{{
+    ${DEBUG} && {
+        fprint "rename 's/.*?\b(\d+).*\./\$1 ./' *"
+        fprint "chmod -x %F{g}${UNPACK}/*"
+    }
+    ${DEBUG} || {
+        rename 's/.*?\b(\d+).*\./$1 ./' *
+        chmod -x *
+    }
+} #}}}
+unpack_downpour() { #{{{
+    do_unzip $@
+    cd ${UNPACK}
+    rename_dp
 } #}}}
 process_options $@
 [[ -n ${UNPACK} ]] && unpack_downpour ${ARGS[@]}
