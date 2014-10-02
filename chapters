@@ -126,7 +126,7 @@ do_unzip() { #{{{
         }
     }
 } #}}}
-rename_dp { #{{{
+rename_dp() { #{{{
     ${DEBUG} && {
         fprint "rename 's/.*?\b(\d+).*\./\$1 ./' *"
         fprint "chmod -x %F{g}${UNPACK}/*"
@@ -136,7 +136,7 @@ rename_dp { #{{{
         chmod -x *
     }
 } #}}}
-rename_mp4 { #{{{
+rename_mp4() { #{{{
     ${DEBUG} && {
         fprint "rename 's/.*?\b(\d+).*\./\$1 ./' *"
         fprint "chmod -x %F{g}${UNPACK}/*"
