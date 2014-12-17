@@ -307,10 +307,18 @@ process_options() { #{{{
         esac
     } #}}}
     # Post-Opt defaults… #{{{
-    : ${EDITOR:=vim -p}
+    : ${EDITOR:=vim}
     : ${KFUFILE:='.kungfu'}
     : ${WORKDIR:=${PWD:A}}
     ARGS+=($@) #}}}
+    # VIM Dwimmer # {{{
+    typeset GVIM
+    GVIM=$(vim --version|grep +X11)
+    if [[ ${EDITOR} =~ 'vim$' ]] {
+        [[ -n ${GVIM} ]] && EDITOR='vim -fpg'
+        [[ -z ${GVIM} ]] && EDITOR='vim -p'
+    }
+    # }}}
     ${CACHE} && create_cache
     # Cause a warning if WORKDIR get overwritten.
     typeset -r WORKDIR=${WORKDIR}
@@ -341,9 +349,11 @@ process_options() { #{{{
     #}}}
 } #}}}
 xwin_id() { #{{{
+    (( $+commands[xwininfo] )) || exit
     xwininfo -root -tree | grep -Pom1 "0x\w+(?= \"\Q${1}\E[\b\s])"
 } #}}}
 xwin_name() { #{{{
+    (( $+commands[xwininfo] )) || exit
     [[ ${1} =~ '0x' ]] || exit -10
     xwininfo -id ${1} | grep -Po "(?<=${1} \")[^\"]+"
 } #}}}
