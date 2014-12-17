@@ -371,9 +371,8 @@ open_check() { #{{{
         "%F{blue}“%F{magenta}$(xwin_name $xID)%F{blue}”" \
         "⦗%F{magenta}${xID}%F{blue}⦘%f"
     } else {
-        fprint 2 \
-            "  %F{green}${XOPENER}%f %F{cyan}${1/${~HOME}/~}%f" \
-            "%F{blue} &>| /dev/null &!"
+        fprint -n 2 "  %F{green}${XOPENER}%f %F{cyan}${1/${~HOME}/~}%f"
+        fprint -c blue 2 " &>| /dev/null &!"
         ${DEBUG} && return
         ${XOPENER} ${1} &>| /dev/null &!
     }
@@ -385,15 +384,15 @@ edit_check() { #{{{
     [[ -n ${EDITORS[${key}]} ]] && EDITOR=${EDITORS[${key}]}
     srcList=(${(z)SOURCES[${key}]})
     for src (${~srcList[@]}) {
-        : ${OPENDIR:=${src:h}}
+        : ${OPENDIR:=${src:a:h}}
         swap_check ${src} || srcFiles+=${src}
     }
     if [[ -z ${srcFiles} ]] {
         fprint "  %F{yellow}No files to edit.%f"
     } else {
         fprint -c magenta "  All clear!"
-        fprint 2 "  %F{green}${(z)EDITOR}%f %F{cyan}${srcFiles[@]}%f" \
-            "%F{blue} &>| /dev/null &!"
+        fprint -n 2 "  %F{green}${(z)EDITOR}%f %F{cyan}${srcFiles[@]}%f"
+        [[ -x ${XOPENER} ]] && fprint -c blue 2 " &>| /dev/null &!"
         ${DEBUG} && return
         if [[ -x ${XOPENER} ]] {
             ${(z)EDITOR} ${(Q)srcFiles[@]} &>| /dev/null &!
@@ -409,7 +408,6 @@ open_checks() { #{{{
     # [[ -n ${EDITORS[${key}]} ]] && XOPENER=${EDITORS[${key}]}
     srcList=(${(z)TARGETS[${key}]})
     for src (${~srcList[@]}) {
-        : ${OPENDIR:=${src:h}}
         open_check ${src}
     }
     [[ -d ${OPENDIR} ]] && open_check ${OPENDIR}
