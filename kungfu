@@ -395,10 +395,15 @@ edit_check() { #{{{
         fprint 2 "  %F{green}${(z)EDITOR}%f %F{cyan}${srcFiles[@]}%f" \
             "%F{blue} &>| /dev/null &!"
         ${DEBUG} && return
-        ${(z)EDITOR} ${(Q)srcFiles[@]} &>| /dev/null &!
+        if [[ -x ${XOPENER} ]] {
+            ${(z)EDITOR} ${(Q)srcFiles[@]} &>| /dev/null &!
+        } else {
+            ${(z)EDITOR} ${(Q)srcFiles[@]}
+        }
     }
 } #}}}
 open_checks() { #{{{
+    [[ -x ${XOPENER} ]] || return
     typeset -a srcFiles srcList
     typeset src
     # [[ -n ${EDITORS[${key}]} ]] && XOPENER=${EDITORS[${key}]}
