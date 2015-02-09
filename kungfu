@@ -165,8 +165,11 @@ manpage() { #{{{
 	# DESCRIPTION
 	
 	KungFu was written to aid the author, as well as anyone else who finds this
-	sort of thing of use, to easily define shell aliases to set up project
+	sort of thing useful, to easily define shell aliases to set up project
 	environments.
+	
+	To set up a new project, open a command line in the project folder and
+	run **kungfu -e** to create and open a default *.kungfu* file.
 	
 	Project folder names may be aliased as executable scripts in a shell startup
 	script, e.g. *~/.zshenv* with:
