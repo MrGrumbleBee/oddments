@@ -1,7 +1,7 @@
 #!/bin/zsh
 setopt RE_MATCH_PCRE
 typeset -a ARGS SWAPS
-typeset -A OPTS SOURCES DEFAULTS EDITORS TARGETS
+typeset -A OPTS SOURCES DEFAULTS EDITORS TARGETS OPENERS
 typeset EDIT=false DEBUG=false BLANK=false NOHELP=false UPDATE=false VERBOSE=0
 typeset WORKDIR KFUFILE OPENDIR XOPENER=$(whence xdg-open)
 SWAPS=('%s/.%s.swp' '%s/%s.swp' '%s/_%s.swp')
@@ -64,9 +64,23 @@ spample() { #{{{
 		# )\n"
     }
     #}}}
+    if [[ -n ${OPENERS[@]} ]] { #{{{
+        TXT+="\nOPENERS=( # Override XOPENER for corresponding TARGETS\n"
+        TXT+="# 'keyword' 'command'\n"
+        for key (${(k)OPENERS}) {
+            TXT+="  '$key' '${OPENERS[${key}]}'\n"
+        }
+        TXT+=")\n"
+    } else {
+        TXT+="
+		# OPENERS=( # Override XOPENER for corresponding TARGETS
+		#   'keyword' 'command'
+		# )\n"
+    }
+    #}}}
     if [[ -n ${TARGETS[@]} ]] { #{{{
         TXT+="\nTARGETS=(\n"
-        TXT+="# 'keyword' 'files to open with XOPENER'"
+        TXT+="# 'keyword' 'files to open with XOPENER or OPENERS[keyword]'"
         for key (${(k)TARGETS}) {
             TXT+="  '$key' '${TARGETS[${key}]}'\n"
         }
@@ -74,7 +88,7 @@ spample() { #{{{
     } else {
     TXT+="
 		# TARGETS=(
-		#   'keyword' 'files to open with XOPENER'
+		#   'keyword' 'files to open with XOPENER or OPENERS[keyword]'
 		# )\n"
     }
     #}}}
@@ -224,8 +238,8 @@ manpage() { #{{{
 	    **SOURCES** file; set to any non-directory to disable.
 	
 	EDITORS
-	:   If a keyword is identical to one in **SOURCES**, the value
-	    specified overrides that of **EDITOR**.
+	:   Hash variable. If a keyword is identical to one in **SOURCES**,
+	    the value specified overrides that of **EDITOR**.
 	EOF
 } #}}}
 brief_usage() { #{{{
@@ -358,7 +372,7 @@ xwin_name() { #{{{
     xwininfo -id ${1} | grep -Po "(?<=${1} \")[^\"]+"
 } #}}}
 open_check() { #{{{
-    typeset xID
+    typeset xID OPENER=${XOPENER}
     if [[ -d ${1} ]] {
         fprint -b "Checking open folders (${1:t})…"
         xID=$(xwin_id ${1:t})
@@ -371,10 +385,13 @@ open_check() { #{{{
         "%F{blue}“%F{magenta}$(xwin_name $xID)%F{blue}”" \
         "⦗%F{magenta}${xID}%F{blue}⦘%f"
     } else {
-        fprint -n 2 "  %F{green}${XOPENER}%f %F{cyan}${1/${~HOME}/~}%f"
+        if [[ -n ${OPENERS[${key}]} ]] && [[ ${1} != ${OPENDIR} ]] {
+            OPENER=${OPENERS[${key}]}
+        }
+        fprint -n 2 "  %F{green}${OPENER}%f %F{cyan}${1/${~HOME}/~}%f"
         fprint -c blue 2 " &>| /dev/null &!"
         ${DEBUG} && return
-        ${XOPENER} ${1} &>| /dev/null &!
+        ${OPENER} ${1} &>| /dev/null &!
     }
 } #}}}
 edit_check() { #{{{
@@ -405,7 +422,6 @@ open_checks() { #{{{
     [[ -x ${XOPENER} ]] || return
     typeset -a srcFiles srcList
     typeset src
-    # [[ -n ${EDITORS[${key}]} ]] && XOPENER=${EDITORS[${key}]}
     srcList=(${(z)TARGETS[${key}]})
     for src (${~srcList[@]}) {
         open_check ${src}
