@@ -104,7 +104,8 @@ gits_do() { # {{{
     for GIT in ${GITREPOS[@]}; {
         cd ${GIT} || continue
         [[ ${VERBOSE} > 0 ]] && {
-            print -n "—⦗${PWD}⦘"
+            typeset H; H=$(hostname -f)
+            print -n "—⦗${H}:${PWD}⦘"
             repeat $(( ${COLS} - ${#PWD} - 3 )) print -n '—'
             print ''
         }
