@@ -104,9 +104,8 @@ gits_do() { # {{{
     for GIT in ${GITREPOS[@]}; {
         cd ${GIT} || continue
         [[ ${VERBOSE} > 0 ]] && {
-            typeset H; H=$(hostname -f)
-            print -n "—⦗${H}:${PWD}⦘"
-            repeat $(( ${COLS} - ${#PWD} - ${#H} - 3 )) print -n '—'
+            print -n "—⦗${HostName}:${PWD}⦘"
+            repeat $(( ${COLS} - ${#PWD} - ${#HostName} - 3 )) print -n '—'
             print ''
         }
         case ${GITARGS[@]} in
@@ -121,6 +120,7 @@ gits_do() { # {{{
     }
 }
 # }}}
+typeset HostName; HostName=$(hostname -f)
 local DEBUG=false RECURSE=false VERBOSE=0 COLS=${COLUMNS}
 local -a OPTDIRS OPTARGS GITREPOS GITARGS
 [[ ${COLS} == 0 ]] && COLS=64 # non interactive default
