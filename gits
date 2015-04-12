@@ -106,7 +106,7 @@ gits_do() { # {{{
         [[ ${VERBOSE} > 0 ]] && {
             typeset H; H=$(hostname -f)
             print -n "—⦗${H}:${PWD}⦘"
-            repeat $(( ${COLS} - ${#PWD} - 3 )) print -n '—'
+            repeat $(( ${COLS} - ${#PWD} - ${#H} - 3 )) print -n '—'
             print ''
         }
         case ${GITARGS[@]} in
