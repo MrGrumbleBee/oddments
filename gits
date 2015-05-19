@@ -104,8 +104,8 @@ gits_do() { # {{{
     for GIT in ${GITREPOS[@]}; {
         cd ${GIT} || continue
         [[ ${VERBOSE} > 0 ]] && {
-            print -n "—⦗${HostName}:${PWD}⦘"
-            repeat $(( ${COLS} - ${#PWD} - ${#HostName} - 3 )) print -n '—'
+            print -n "— ${HostName}:${PWD} "
+            repeat $(( ${COLS} - ${#PWD} - ${#HostName} - 4 )) print -n '—'
             print ''
         }
         case ${GITARGS[@]} in
