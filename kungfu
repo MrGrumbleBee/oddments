@@ -2,8 +2,9 @@
 setopt RE_MATCH_PCRE
 typeset -a ARGS SWAPS
 typeset -A OPTS SOURCES DEFAULTS EDITORS TARGETS OPENERS
+typeset -U KEYS
 typeset EDIT=false DEBUG=false BLANK=false NOHELP=false UPDATE=false VERBOSE=0
-typeset WORKDIR KFUFILE OPENDIR XOPENER=$(whence xdg-open)
+typeset key WORKDIR KFUFILE OPENDIR XOPENER=$(whence xdg-open)
 SWAPS=('%s/.%s.swp' '%s/%s.swp' '%s/_%s.swp')
 fprint() { #{{{
     typeset VCHECK HEAD='' TAIL='%f' COLOR='black' N=false
@@ -247,9 +248,7 @@ manpage() { #{{{
 } #}}}
 brief_usage() { #{{{
     typeset HELP='%B%F{b}' LISTS='%F{blue}';
-    [[ -n ${SOURCES} ]] && LISTS+=${(kpj:%F{b}|%F{blue}:)SOURCES};
-    [[ -n ${SOURCES} && -n ${TARGETS} ]] && LISTS+='%F{b}|%F{blue}';
-    [[ -n ${TARGETS} ]] && LISTS+=${(kpj:%F{b}|%F{blue}:)TARGETS};
+    [[ -n ${KEYS} ]] && LISTS+=${(pj:%F{b}|%F{blue}:)KEYS};
     case ${1} in
         'brief')
         if [[ -z ${LISTS} ]] {
@@ -362,6 +361,8 @@ process_options() { #{{{
         }
     } #}}}
     [[ -z ${SOURCES} && -z ${TARGETS} ]] && usage 'sources'
+    KEYS=(${(k)SOURCES} ${(k)TARGETS}); KEYS=(${(o)KEYS})
+    key=${KEYS[(r)${1}*]}
     [[ -z ${ARGS} ]] && usage brief
     #}}}
 } #}}}
@@ -432,8 +433,6 @@ open_checks() { #{{{
     [[ -d ${OPENDIR} ]] && open_check ${OPENDIR}
 } #}}}
 kungfu() { #{{{
-    typeset key; typeset -a KEYS
-    KEYS=(${(k)SOURCES} ${(k)TARGETS}); key=${KEYS[(r)${1}*]}
     if [[ -z ${1} ]] {
         usage brief ${1}
     } elif [[ -n ${TARGETS[${key}]} || -n ${SOURCES[${key}]} ]] {
