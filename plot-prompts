@@ -2,7 +2,7 @@
 do_part () { #{{{
     typeset TxtPart HiColor=${2:='%B%F{blue}'} BaseColor='%B%F{black}'
     setopt RE_MATCH_PCRE
-    TxtPart=$(sort -R ${1} | head -1)
+    TxtPart=$(grep -v '^#' ${1} | sort -R | head -1)
     if [[ ${TxtPart} =~ '^([Tt]he|[Aa]n*) ' ]] {
         TxtPart=${TxtPart/${~match} /${BaseColor}${match} ${HiColor}}
     }
