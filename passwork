@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 use strict;
+use utf8;
+use Encode;
 use Pod::Usage;
 use Getopt::Long;  #{{{
 Getopt::Long::config('bundling');
@@ -11,7 +13,7 @@ GetOptions(
       "accrete|A"   => sub { $opts{'algorithm'} = 'accrete' },
      "dispress|D"   => sub { $opts{'algorithm'} = 'dispress' },
          "help|h"   => \$opts{'help'},
-	     "leet|L"   => \$opts{'leet'},
+	     "leet|L:+" => \$opts{'leet'},
      "wordlist|w=s" => \$opts{'wordlist'},
 	  "verbose|v:+" => \$opts{'verbose'},
 	     "lame|l:+" => \$opts{'lame'},
@@ -35,7 +37,7 @@ for (my $i = 0; $i < $loop; $i++) {
         $algo = $algorithms[rand(@algorithms)];
     }
     my $password = random_password($algo, $length, \@words, \%opts);
-    print $password;
+    print encode('utf-8', $password);
     printf(' [%s]', $algo) if $opts{'verbose'} > 0;
     print "\n";
 }	
@@ -60,8 +62,19 @@ sub random_password { # {{{
     my $password = $opts->{'lame'}
                  ? $a . $b
                  : addfix($a, $b, $length);
-	$password =~ tr/AaeiolSsx/@43!015$X/ if $opts->{'leet'};
-    $password =~ s/(\w+)/\L$1/ if $opts->{'lame'} && $opts->{'lame'} > 1;
+
+    # 733t L3v3L$ #{{{
+    if ($opts->{'leet'} == 1) {
+        $password =~ tr/AEOol/43001/;
+    }
+    elsif ($opts->{'leet'} == 2) {
+        $password =~ tr/AaEolS/4@301$/;
+    }
+    elsif ($opts->{'leet'} > 2) {
+        $password =~ tr/AaeiolSsx/4@3!015$X/;
+    } #}}}
+
+    $password =~ s/(\w+)/\L$1/ if $opts->{'lame'} && $opts->{'lame'} > 2;
     return $password;
 }
 # }}}
@@ -125,10 +138,20 @@ sub build_word { # {{{
         my (@s_vowel)     = qw(a e i o u y);
         my (@s_consonant) = qw(b c d f g h j k l m n p q r s t v w x z);
         my (@vowel)     = qw(a a a e e e e i i i o o o u u y
+                             a a a e e e e i i i o o o u u y
+                             a a a e e e e i i i o o o u u y
                              ae ai au ay ea ee eu ia ie io oa oi oo oy);
         my (@consonant) = qw(b c d f g h j k l m n p qu r s t v w x z
                              th st sh ph ng nd);
         my ($vowelnext) = int(rand(2));  # Initialise to 0 or 1
+
+        # International letters #{{{
+        if ($opts{'lame'} < 2) {
+            push @s_vowel, qw(á é í ó ú);
+            push @vowel, qw(ő ű á é í ó ú à è ì ò ù);
+            push @consonant, qw(ç ñ);
+        }
+        #}}}
 
         until (length($word) >= $len) {
             $close = (length($word) == ($len - 1));
@@ -203,19 +226,28 @@ Identical to  B<--algorithm> I<dispress>
 
 Use the given wordlist instead of the system dictionary file.
 
-=item	B<-l>, B<--lame>
+=item	B<-l>, B<--lame> I<N>
 
-Set lameness: use once to exclude numeric and special characters
-use twice to exclude all but lower case letters.
+Set password lameness;
+the short option increments by one, the long option expects an integer.
 
-=item	B<-L>, B<--leet>
+Use once to exclude special characters,
+use twice to exclude international characters from the accretion algorithm,
+use thrice to exclude all but lower case letters.
 
-M@k3 th3 p@$$w0rds n3@r1y i11g3b13.
+=item	B<-L>, B<--leet> I<N>
+
+Set password L33t h@X0rne$$;
+the short option increments by one, the long option expects an integer.
+
+Use once to replace some letters with lookalike numbers,
+use twice for more numbers and lookalike symbols,
+use thrice to m@k3 p@$$w0rds n3@r1y i11g3b13.
 
 =item	B<-v>, B<--verbose> I<N>
 
-Set verbosity; the short option increments verbosity by one, the long
-option expects an integer.
+Set verbosity;
+the short option increments by one, the long option expects an integer.
 
 =back
 
