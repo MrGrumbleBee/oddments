@@ -8,7 +8,9 @@ my %opts = (
 );
 GetOptions(
 	"algorithm|a=s" => \$opts{'algorithm'},
-           "help|h" => \$opts{'help'},
+      "accrete|A"   => sub { $opts{'algorithm'} = 'accrete' },
+     "dispress|D"   => sub { $opts{'algorithm'} = 'dispress' },
+         "help|h"   => \$opts{'help'},
 	     "leet|L"   => \$opts{'leet'},
      "wordlist|w=s" => \$opts{'wordlist'},
 	  "verbose|v:+" => \$opts{'verbose'},
@@ -16,8 +18,8 @@ GetOptions(
 );
 #}}}
 pod2usage(-exitstatus => 0, -verbose => 2) if $opts{'help'};
-die "USAGE: passwork [-a (accrete|dispress)] [-l] [-s] [-w filename] int [int]"
-    . "\nSee `passwork --help` for complete documentation.\n" 
+die "USAGE: passwork int [int] [options]"
+    . "\nSee `passwork --help` for complete documentation.\n"
     unless @ARGV;
 
 my @algorithms = ('dispress', 'accrete');
@@ -33,15 +35,13 @@ for (my $i = 0; $i < $loop; $i++) {
         $algo = $algorithms[rand(@algorithms)];
     }
     my $password = random_password($algo, $length, \@words, \%opts);
-    printf('%02d ', length($password)) if $opts{'verbose'} > 0;
     print $password;
-    printf(' %s', $algo) if $opts{'verbose'} > 1;
+    printf(' [%s]', $algo) if $opts{'verbose'} > 0;
     print "\n";
 }	
 # }}}
-
 sub random_password { # {{{
-    my ($algorithm, $length, $words, $opts) = @_; 
+    my ($algorithm, $length, $words, $opts) = @_;
 
     my $alen = int($length / 2) - 1;
     my $blen = int($length - $alen);
@@ -156,9 +156,10 @@ passwork - A password generator
 
 =head1 SYNOPSIS
 
-B<passwork> [B<options>]
+B<passwork>
 I<int>
 [I<int>]
+[B<options>]
 
 =head1 DESCRIPTION
 
@@ -170,22 +171,33 @@ second parameter sets the number of passwords to generate.
 Absolute length precision has been sacrificed in favor of pronounceability,
 however the program tries to include one symbol character and allow up
 to three as prefix, infix, postfix, or brackets to compensate for length
-discrepancies. 
+discrepancies.
 
 =head1 OPTIONS
 
 =over 5
 
-=item	B<-a>, B<--algorithm> I<dispress>|I<accrete>
+=item	B<-a>, B<--algorithm> I<accrete>|I<dispress>|I<mix>
 
 Specify the password generation algorithm; if not specified, a random algorithm
 will be selected for each password generated.
 
+I<accrete> -
+randomly selected consonants, vowels, and digraphs.
+
 I<dispress> -
 a letter-based Dissociated Press algorithm applied to a dictionary file.
 
-I<accrete> -
-randomly selected consonants, vowels, and digraphs.
+I<mix> -
+randomly mix both algorithms. This is the default behavior.
+
+=item	B<-A>, B<--accrete>
+
+Identical to  B<--algorithm> I<accrete>
+
+=item	B<-D>, B<--dispress>
+
+Identical to  B<--algorithm> I<dispress>
 
 =item	B<-w>, B<--wordlist> I<filename>  
 
@@ -200,16 +212,21 @@ use twice to exclude all but lower case letters.
 
 M@k3 th3 p@$$w0rds n3@r1y i11g3b13.
 
+=item	B<-v>, B<--verbose> I<N>
+
+Set verbosity; the short option increments verbosity by one, the long
+option expects an integer.
+
 =back
 
 =head1 AUTHOR
 
-    Garrison Hoffman <garrison@codefix.net>
+    Garrison Hoffman <garrison.hoffman@gmail.com>
     Codefix Consulting Inc.
 
 =head1 LICENSE
 
-Copyright (c) 2011 Garrison Hoffman, Codefix Consulting, Inc.
+Copyright (c) 2015 Garrison Hoffman, Codefix Consulting, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
