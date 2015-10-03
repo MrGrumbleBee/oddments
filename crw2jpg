@@ -34,7 +34,10 @@ conversion() { #{{{
         out="${crw:r}.${EXT}"
         print "${crw} → ${out:t}"
         gm convert -quality ${QUALITY} ${crw} ${out}
+        # copy EXIF data
         exiv2 insert -l${crw:h} -S.crw ${out}
+        # set timestamp according to EXIF
+        exiv2 -T rename ${out}
     }
 } #}}}
 process_options $@
