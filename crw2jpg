@@ -1,0 +1,41 @@
+#!/bin/zsh
+usage() { #{{{
+    print "crw2jpg [--quality (1-100)] [--format (jpg|png)] <source file(s)>"
+    exit 1
+} #}}}
+process_options() { #{{{
+    typeset CACHE=false
+    # Process les parametrices… #{{{
+    zparseopts -E -D -AOPTS -- d -debug v+=VT -verbose: h -help \
+        f: -format: r -recurse q: -quality:
+    [[ $? = 0 ]] || exit ${status}
+    for o (${(k)OPTS}) {
+        case ${o} in
+            -d | --debug)   DEBUG=true;;
+            -h | --help)    usage;;
+            -f | --format)  EXT=${OPTS[$o]};;
+            -q | --quality) QUALITY=${OPTS[$o]};;
+                 --verbose) let VERBOSE=${OPTS[$o]/=/};;
+            -v)             let VERBOSE+=${#VT};;
+        esac
+    } #}}}
+    ARGS+=($@)
+    [[ -z ${ARGS} ]] && usage
+} #}}}
+conversion() { #{{{
+    : ${QUALITY:=100}
+    : ${EXT:=jpg}
+    print "Using: ${QUALITY}% ${EXT}"
+    for crw (${ARGS[@]}) {
+        if [[ ${crw:e} != 'crw' ]] {
+            print "Skipping !CRW: ${crw}"
+            break
+        }
+        out="${crw:r}.${EXT}"
+        print "${crw} → ${out:t}"
+        gm convert -quality ${QUALITY} ${crw} ${out}
+        exiv2 insert -l${crw:h} -S.crw ${out}
+    }
+} #}}}
+process_options $@
+conversion ${ARGS}
