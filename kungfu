@@ -355,14 +355,14 @@ process_options() { #{{{
         if [[ -f ${arg} ]] {
             cmdFiles+=${arg:q}
         }
-        if [[ -n ${cmdFiles} ]] {
-            SOURCES[_CLI]=${cmdFiles}
-            [[ -f ${ARGS[1]} ]] && ARGS[1]='_CLI'
-        }
+    }
+    if [[ -n ${cmdFiles} ]] {
+        SOURCES[_CLI]=${cmdFiles}
+        [[ -f ${ARGS[1]} ]] && ARGS[1]='_CLI'
     } #}}}
     [[ -z ${SOURCES} && -z ${TARGETS} ]] && usage 'sources'
     KEYS=(${(k)SOURCES} ${(k)TARGETS}); KEYS=(${(o)KEYS})
-    key=${KEYS[(r)${1}*]}
+    key=${KEYS[(r)${ARGS[1]}*]}
     [[ -z ${ARGS} ]] && usage brief
     #}}}
 } #}}}
