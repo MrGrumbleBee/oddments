@@ -43,7 +43,7 @@ usage() { #{{{
 	:   Use **service(8)** to restart any stopped services.
 	-v, -q
 	:   Increment, decrement verbosity with each use.
-	--verbosity=*N*
+	--verbose=*N*
 	:   Set an explicit verbosity level.
 	
 	# VERBOSITY LEVELS
