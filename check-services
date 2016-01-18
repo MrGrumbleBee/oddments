@@ -155,7 +155,11 @@ test_service () { #{{{
             (( ${VERBOSE} < 0 )) && STATUS=''
             output 'WARN' ${SERVICE} "${STATUS}" red yellow
         }
-        ${RESTART} && sudo service ${SERVICE} restart
+        ${RESTART} && {
+            typeset RESTATUS
+            RESTATUS=$(sudo service ${SERVICE} restart |& cat)
+            (( VERBOSE > -2 )) && print -P " %F{blue}${RESTATUS}%f"
+        }
     }
 } #}}}
 loop_services () { #{{{
