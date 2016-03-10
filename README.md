@@ -8,22 +8,28 @@ chapters
 
 A tool to assist in renaming audiobook files downloaded from downpour.com.
 
-check-services
+crw2jpg
 --------------
 
-In development. _caveat emptor_
+Uses [Graphics Magick](http://www.graphicsmagick.org/) and
+[Exiv2](http://exiv2.org/) to convert CRW files to JPG.
 
-gits
-----
+pandoc-wrapper
+--------------
 
-Perform operations on multiple git repositories.
-
-kungfu
-------
-
-A workflow tool.
+A wrapper script for pandoc.
 
 passwork
 --------
 
 A better pronounceable password generator.
+
+plot-prompts
+------------
+
+A plot prompt generator.
+
+wc-pandoc
+---------
+
+Word count for pandoc-markdown which excludes headers & metadata.
