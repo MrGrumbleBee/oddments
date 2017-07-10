@@ -1,6 +1,7 @@
 #!/bin/zsh
+typeset HiColor=${2:='%B%F{blue}'} BaseColor='%B%F{black}'
 do_part () { #{{{
-    typeset TxtPart HiColor=${2:='%B%F{blue}'} BaseColor='%B%F{black}'
+    typeset TxtPart
     setopt RE_MATCH_PCRE
     TxtPart=$(grep -v '^#' ${1} | sort -R | head -1)
     if [[ ${TxtPart} =~ '^([Tt]he|[Aa]n*) ' ]] {
@@ -12,12 +13,14 @@ do_part () { #{{{
     print "${HiColor}${TxtPart}${BaseColor}"
 } #}}}
 do_prompts () { #{{{
-    typeset Protagonist Antagonist Object Theme
+    typeset Protagonist Antagonist Object Theme Need
     for x ({1..${1}}) {
         Protagonist=$(do_part ${datdir}/subjects)
         Antagonist=$(do_part ${datdir}/subjects)
         Object=$(do_part ${datdir}/objects)
         Theme=$(do_part ${datdir}/themes)
+        Need=$(do_part ${datdir}/needs)
+        print -Pn "${BaseColor}A tale of ${Need}: "
         print -Pn "${Protagonist}, "
         print -Pn "${Antagonist}, "
         print -Pn "${Object}, "
