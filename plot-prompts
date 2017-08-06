@@ -20,11 +20,11 @@ do_prompts () { #{{{
         Object=$(do_part ${datdir}/objects)
         Theme=$(do_part ${datdir}/themes)
         Need=$(do_part ${datdir}/needs)
-        print -Pn "${BaseColor}A tale of ${Need}: "
-        print -Pn "${Protagonist}, "
-        print -Pn "${Antagonist}, "
-        print -Pn "${Object}, "
-        print -P "and ${Theme}."
+        print -nP ${BaseColor}
+        print -nPf '"%s" in which %s embodies the need for %s ' \
+            ${Theme} ${Object} ${Need}
+        print -Pf 'as %s confronts %s' ${Protagonist} ${Antagonist}
+        print ''
     }
 } #}}}
 typeset num=1 datdir="${0:h}/plot-prompts.dat"
