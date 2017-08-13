@@ -1,0 +1,52 @@
+#!/usr/bin/zsh
+usage() {  #{{{
+    : ${PAGER:=less}
+    typeset HELP
+    HELP='Usage: clipminion [options] --mode <mode> [modal args]
+
+    A helpful utility for clipman commands, which seems incapable of shell
+    redirection, ignorant of environment variables, et hoc genus omnes.
+
+    CORE OPTIONS:
+        -m, --mode
+                See MODES.
+
+    MODES:
+
+        xclip
+                runs `print $@ | xclip`
+
+'
+    print -P ${HELP} | ${PAGER}
+    exit
+}
+#}}}
+process_options() { #{{{
+    zparseopts -E -D -AOPTS -- d -debug v+=VB -verbose: q+=QT -quiet: h -help \
+        m: -mode:
+    [[ $? = 0 ]] || print "Error ${status}!"
+    for o (${(k)OPTS}) {
+        case ${o} in
+            -d | --debug)       DEBUG=true;;
+            -h | --help)        manpage;;
+            -m | --mode)        MODE=${OPTS[$o]};;
+                 --verbose)     let VERBOSE=${OPTS[$o]};;
+            -q)                 let VERBOSE-=${#QT};;
+            -v)                 let VERBOSE+=${#VB};;
+        esac
+    }
+    [[ ${1} == '--' ]] &&  shift;
+    ARGS+=($@)
+} #}}}
+do_xclip() { # {{{
+    print ${@} | xclip
+} # }}}
+main_switch() { #{{{
+    case ${MODE} in
+        'help') usage;;
+       'xclip') do_xclip ${ARGS};;
+             *) usage;;
+    esac
+} #}}}
+process_options ${@}
+main_switch
