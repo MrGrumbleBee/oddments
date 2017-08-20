@@ -20,9 +20,10 @@ do_prompts () { #{{{
         Object=$(do_part ${datdir}/objects)
         Theme=$(do_part ${datdir}/themes)
         Need=$(do_part ${datdir}/needs)
+        Plot=$(do_part ${datdir}/plots)
         print -nP ${BaseColor}
-        print -nPf '"%s" in which %s embodies the need for %s ' \
-            ${Theme} ${Object} ${Need}
+        print -nPf '"%s" %s tale in which %s embodies the need for %s ' \
+            ${Theme} ${Plot} ${Object} ${Need}
         print -Pf 'as %s confronts %s' ${Protagonist} ${Antagonist}
         print ''
     }
